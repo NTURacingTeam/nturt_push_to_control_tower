@@ -1,7 +1,7 @@
 <package>
-  <name>nturt_logger</name>
+  <name>nturt_push_to_control_tower</name>
   <version>0.5.0</version><!--major.minor.patch-->
-  <description>logger</description>
+  <description>push to control tower</description>
   <maintainer email="kuojack0114@gmail.com">Chemmy-Jack</maintainer>
   <license>TODO: License declaration</license>
   <buildtool_depend>catkin</buildtool_depend>

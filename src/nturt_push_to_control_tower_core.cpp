@@ -3,6 +3,7 @@
 #include <NTURT_CAN_Parser.hpp>
 
 int P2ctower_core::push2_ctower(string type, string sub_type, double value, double time );
+    s{td::cout << "type: " << type << "  subtype: " << sub_type << "  value: " << value << "  time: " << time << std::endl ;
     return OK;
 };
 
