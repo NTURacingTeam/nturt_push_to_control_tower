@@ -1,6 +1,8 @@
 #ifndef NTURT_PUSH_TO_CONTROL_TOWER_CORE__H
 #define NTURT_PUSH_TO_CONTROL_TOWER_CORE__H
 
+#include <string>
+
 // define result state here
 #ifndef OK_ERR
 #define OK_ERR
@@ -12,9 +14,8 @@
 
 class P2ctower_core {
     public :
-        int push2_ctower(string type, string sub_type, double value, double time );
+        int push2_ctower(std::string type, std::string sub_type, double value, double time );
         int init_websocket();
-
-}
+};
 
 #endif

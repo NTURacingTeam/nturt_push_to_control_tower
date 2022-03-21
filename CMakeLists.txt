@@ -11,7 +11,7 @@ catkin_package(CATKIN_DEPENDS nturt_can_parser)
 include_directories(inc ${catkin_INCLUDE_DIRS} ${nturt_can_parser_INCLUDE_DIRS})
 link_directories(${catkin_LIBRARY_DIRS} ${nturt_logger_INCLUDE_DIRS} ${nturt_can_parser_INCLUDE_DIRS})
 
-add_executable(nturt_push_to_control_tower src/logger_core.cpp src/logger_node.cpp)
+add_executable(nturt_push_to_control_tower src/nturt_push_to_control_tower_core.cpp src/nturt_push_to_control_tower_node.cpp)
 target_link_libraries(nturt_push_to_control_tower ${catkin_LIBRARIES} ${nturt_can_parser_LIBRARIES})
 add_dependencies(nturt_push_to_control_tower ${catkin_EXPORTED_TARGETS})
 
