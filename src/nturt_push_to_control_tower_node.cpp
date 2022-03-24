@@ -1,5 +1,6 @@
 #include "ros/ros.h"
 #include "can_msgs/Frame.h"
+#include "std_msgs/String.h"
 
 #include <iostream>
 #include <sstream>
@@ -7,22 +8,28 @@
 #include <cp_can_id.hpp>
 #include <NTURT_CAN_Parser.hpp>
 
+int push2_ctower(std::string type, std::string sub_type, double value, double time );
 
 void CAN_Callback(const can_msgs::Frame::ConstPtr &msg);
 
 NTURT_CAN_parser* myparser;
 P2ctower_core* p2ctower_core;
 
+ros::NodeHandle* send_to_ctower_data_nodehandler;
+ros::Publisher* publisher;
+
+// start up topic publisher (publish to nturt bridge to control tower)
 int main(int argc, char **argv){
     myparser = new NTURT_CAN_parser();
     p2ctower_core = new P2ctower_core();
     myparser->init_parser();
     p2ctower_core->init_websocket();
 
-    // start up topic publisher (publish to nturt bridge to control tower)
     ros::init(argc, argv, "send_to_ctower_data");
-    ros::NodeHandle send_to_ctower_data_nodehandler;
-    ros::Publisher chatter_pub = send_to_ctower_data_nodehandler.advertise<std_msgs::String>("send_to_ctower_data", 50);
+    send_to_ctower_data_nodehandler = new ros::NodeHandle() ;
+    publisher = new ros::Publisher();
+    publisher = send_to_ctower_data_nodehandler->advertise<std_msgs::String>("send_to_ctower_data", 50);
+
 
     // start up topic subsciber
     ros::init(argc, argv, "nturt_push_to_control_tower_core");
@@ -34,6 +41,8 @@ int main(int argc, char **argv){
     std::cout<<"Start Spinning"<<std::endl;
 
     ros::spin();
+
+    std::cout<<"spinning start"<<std::endl;
     return OK ;
 };
 
@@ -177,10 +186,20 @@ void CAN_Callback(const can_msgs::Frame::ConstPtr &msg){
     };
     myparser->print_err_log();
 
-    std_msgs::String msg;
+    std_msgs::String message;
     std::stringstream ss;
-    ss << "hello world " << count;
-    msg.data = ss.str();
-    ROS_INFO("%s", msg.data.c_str());
-    send_to_ctower_data_nodehandler(msg);
+    ss << "hello world " ;
+    message.data = ss.str();
+    ROS_INFO("%s", message.data.c_str());
+    publisher(message);
+}
+
+int push2_ctower(std::string type, std::string sub_type, double value, double time ){
+    std::string message = "{'name':[";
+    message += type + "','" + sub_type + "'],'value':";
+    message += std::to_string(value);
+    message += "}";
+    /* publisher(message); */
+    /* {name:["FWS","L"],value:1.1,time:123.4} */
+    return OK;
 }
