@@ -19,6 +19,11 @@ int main(int argc, char **argv){
     myparser->init_parser();
     p2ctower_core->init_websocket();
 
+    // start up topic publisher (publish to nturt bridge to control tower)
+    ros::init(argc, argv, "send_to_ctower_data");
+    ros::NodeHandle send_to_ctower_data_nodehandler;
+    ros::Publisher chatter_pub = send_to_ctower_data_nodehandler.advertise<std_msgs::String>("send_to_ctower_data", 50);
+
     // start up topic subsciber
     ros::init(argc, argv, "nturt_push_to_control_tower_core");
 
@@ -171,4 +176,11 @@ void CAN_Callback(const can_msgs::Frame::ConstPtr &msg){
         };
     };
     myparser->print_err_log();
+
+    std_msgs::String msg;
+    std::stringstream ss;
+    ss << "hello world " << count;
+    msg.data = ss.str();
+    ROS_INFO("%s", msg.data.c_str());
+    send_to_ctower_data_nodehandler(msg);
 }
