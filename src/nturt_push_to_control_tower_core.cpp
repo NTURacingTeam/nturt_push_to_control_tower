@@ -1,4 +1,86 @@
+#include <boost/beast/core.hpp>
+#include <boost/beast/websocket.hpp>
+#include <boost/asio/connect.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <cstdlib>
+#include <iostream>
+#include <string>
+
 #include <nturt_push_to_control_tower_core.hpp>
+
+namespace beast = boost::beast;         // from <boost/beast.hpp>
+namespace http = beast::http;           // from <boost/beast/http.hpp>
+namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
+namespace net = boost::asio;            // from <boost/asio.hpp>
+using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
+
+/* -------------------------------------------------------- */
+class websocket_class {
+    private :
+        std::string host_ = "localhost";
+        auto const  port_ = "8080";
+        /* std::string text_ = R"({"name":["FWS","L"],"value":1.1,"time":123.4})"; */
+
+        // The io_context is required for all I/O
+        net::io_context ioc;
+
+        // These objects perform our I/O
+        tcp::resolver resolver_{ioc};
+        websocket::stream<tcp::socket> ws_{ioc};
+
+        // Look up the domain name
+        auto const results = resolver.resolve(host_, port_);
+
+        // Make the connection on the IP address we get from a lookup
+        auto ep = net::connect(ws_.next_layer(), results);
+
+    public :
+        int init(){
+
+            // Update the host_ string. This will provide the value of the
+            // Host HTTP header during the WebSocket handshake.
+            // See https://tools.ietf.org/html/rfc7230#section-5.4
+            host_ += ':' + std::to_string(ep.port());
+
+            // Set a decorator to change the User-Agent of the handshake
+            ws_.set_option(websocket::stream_base::decorator(
+                [](websocket::request_type& req)
+                {
+                    req.set(http::field::user_agent,
+                        std::string(BOOST_BEAST_VERSION_STRING) +
+                            " websocket-client-coro");
+                }));
+
+            // Perform the websocket handshake
+            ws_.handshake(host, "/");
+        }
+
+    // Send the message
+    int push2_ctower(std::string type, std::string sub_type, double value, double time ) {
+        std::string message = "{'name':[";
+        message += type + "','" + sub_type + "'],'value':";
+        message += std::to_string(value);
+        message += "}";
+        std::cout << message << std::endl;
+        /* std_msgs::String send_msg ; */
+        /* send_msg.data = message ; */
+        /* bridge_pub.publish(send_msg); */
+        ws_.write(net::buffer(std::string(message)));
+        return OK;
+    };
+
+    int close_connection() {
+        // Close the WebSocket connection
+        ws_.close(websocket::close_code::normal);
+    }
+
+    // If we get here then the connection is closed gracefully
+
+    // The make_printable() function helps print a ConstBufferSequence
+    /* std::cout << beast::make_printable(buffer.data()) << std::endl; */
+}
+
+/* -------------------------------------------------------- */
 
 int P2ctower_core::push2_ctower(std::string type, std::string sub_type, double value, double time ) {
     std::string message = "{'name':[";
