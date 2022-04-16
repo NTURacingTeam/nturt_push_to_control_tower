@@ -16,44 +16,36 @@ using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 /* -------------------------------------------------------- */
 class websocket_class {
-    private :
-        std::string host_ = "localhost";
-        auto const  port_ = "8080";
-        /* std::string text_ = R"({"name":["FWS","L"],"value":1.1,"time":123.4})"; */
 
-        // The io_context is required for all I/O
-        net::io_context ioc;
+public :
+    websocket_class() {
+        host_ = "localhost";
+        port_ = "8080";
+        results = resolver.resolve(host_, port_);
+        ep = net::connect(ws_.next_layer(), results);
 
-        // These objects perform our I/O
-        tcp::resolver resolver_{ioc};
-        websocket::stream<tcp::socket> ws_{ioc};
 
-        // Look up the domain name
-        auto const results = resolver.resolve(host_, port_);
+    }
+    int init(){
 
-        // Make the connection on the IP address we get from a lookup
-        auto ep = net::connect(ws_.next_layer(), results);
+        // Update the host_ string. This will provide the value of the
+        // Host HTTP header during the WebSocket handshake.
+        // See https://tools.ietf.org/html/rfc7230#section-5.4
+        host_ += ':' + std::to_string(ep.port());
 
-    public :
-        int init(){
+        // Set a decorator to change the User-Agent of the handshake
+        ws_.set_option(websocket::stream_base::decorator(
+            [](websocket::request_type& req)
+            {
+                req.set(http::field::user_agent,
+                    std::string(BOOST_BEAST_VERSION_STRING) +
+                        " websocket-client-coro");
+            }));
 
-            // Update the host_ string. This will provide the value of the
-            // Host HTTP header during the WebSocket handshake.
-            // See https://tools.ietf.org/html/rfc7230#section-5.4
-            host_ += ':' + std::to_string(ep.port());
-
-            // Set a decorator to change the User-Agent of the handshake
-            ws_.set_option(websocket::stream_base::decorator(
-                [](websocket::request_type& req)
-                {
-                    req.set(http::field::user_agent,
-                        std::string(BOOST_BEAST_VERSION_STRING) +
-                            " websocket-client-coro");
-                }));
-
-            // Perform the websocket handshake
-            ws_.handshake(host, "/");
-        }
+        // Perform the websocket handshake
+        ws_.handshake(host, "/");
+        return OK;
+    }
 
     // Send the message
     int push2_ctower(std::string type, std::string sub_type, double value, double time ) {
@@ -72,12 +64,32 @@ class websocket_class {
     int close_connection() {
         // Close the WebSocket connection
         ws_.close(websocket::close_code::normal);
+        return OK;
     }
 
     // If we get here then the connection is closed gracefully
 
     // The make_printable() function helps print a ConstBufferSequence
     /* std::cout << beast::make_printable(buffer.data()) << std::endl; */
+    
+private :
+    std::string host_;
+    std::string const port_;
+    /* std::string text_ = R"({"name":["FWS","L"],"value":1.1,"time":123.4})"; */
+
+    // The io_context is required for all I/O
+    net::io_context ioc;
+
+    // These objects perform our I/O
+    tcp::resolver resolver_{ioc};
+    websocket::stream<tcp::socket> ws_{ioc};
+
+    // Look up the domain name
+    boost::asio::ip::basic_resolver_results<boost::asio::ip::tcp> const results;
+
+    // Make the connection on the IP address we get from a lookup
+    tcp::endpoint ep;
+
 }
 
 /* -------------------------------------------------------- */
