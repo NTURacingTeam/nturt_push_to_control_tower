@@ -1,26 +1,4 @@
-#include <boost/beast/core.hpp>
-#include <boost/beast/websocket.hpp>
-#include <boost/asio/connect.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <cstdlib>
-#include <iostream>
-#include <string>
-
 #include <nturt_push_to_control_tower_core.hpp>
-
-namespace beast = boost::beast;         // from <boost/beast.hpp>
-namespace http = beast::http;           // from <boost/beast/http.hpp>
-namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
-namespace net = boost::asio;            // from <boost/asio.hpp>
-using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
-
-/* -------------------------------------------------------- */
-
-int P2ctower_core::close_connection() {
-    // Close the WebSocket connection
-    ws_.close(websocket::close_code::normal);
-    return OK;
-}
 
 int P2ctower_core::push2_ctower(std::string type, std::string sub_type, double value, double time ) {
     std::string message = "{'name':[";
@@ -28,30 +6,15 @@ int P2ctower_core::push2_ctower(std::string type, std::string sub_type, double v
     message += std::to_string(value);
     message += "}";
     std::cout << message << std::endl;
-    /* std_msgs::String send_msg ; */
-    /* send_msg.data = message ; */
-    /* bridge_pub.publish(send_msg); */
-    ws_.write(net::buffer(std::string(message)));
+    std_msgs::String send_msg ;
+    send_msg.data = message ;
+    bridge_pub.publish(send_msg);
+    /* publisher(message); */
+    /* {name:["FWS","L"],value:1.1,time:123.4} */
     return OK;
 };
 
 int P2ctower_core::init_websocket(){
-    // Update the host_ string. This will provide the value of the
-    // Host HTTP header during the WebSocket handshake.
-    // See https://tools.ietf.org/html/rfc7230#section-5.4
-    host_ += ':' + std::to_string(ep.port());
-
-    // Set a decorator to change the User-Agent of the handshake
-    ws_.set_option(websocket::stream_base::decorator(
-        [](websocket::request_type& req)
-        {
-            req.set(http::field::user_agent,
-                std::string(BOOST_BEAST_VERSION_STRING) +
-                    " websocket-client-coro");
-        }));
-
-    // Perform the websocket handshake
-    ws_.handshake(host, "/");
     return OK;
 };
 
@@ -61,12 +24,6 @@ P2ctower_core::P2ctower_core(std::shared_ptr<ros::NodeHandle> &nh) : nh_(nh) {
     myparser.init_parser();
     bridge_pub = nh->advertise<std_msgs::String>("send_to_ctower_data", 50);
     can_sub = nh->subscribe("received_messages", 10, &P2ctower_core::CAN_Callback, this);
-
-    // for websocket
-    host_ = "localhost";
-    port_ = "8080";
-    results = resolver.resolve(host_, port_);
-    ep = net::connect(ws_.next_layer(), results);
 }
 
 void P2ctower_core::CAN_Callback(const can_msgs::Frame::ConstPtr &msg){

@@ -28,25 +28,12 @@ class P2ctower_core {
         int push2_ctower(std::string type, std::string sub_type, double value, double time );
         int init_websocket();
         void CAN_Callback(const can_msgs::Frame::ConstPtr &msg);
-        int close_connection();
 
     private :
         Parser myparser;
         std::shared_ptr<ros::NodeHandle> nh_;
         ros::Publisher bridge_pub ;
         ros::Subscriber can_sub ;
-
-        std::string host_;
-        std::string const port_;
-        // The io_context is required for all I/O
-        net::io_context ioc;
-        // These objects perform our I/O
-        tcp::resolver resolver_{ioc};
-        websocket::stream<tcp::socket> ws_{ioc};
-        // Look up the domain name
-        boost::asio::ip::basic_resolver_results<boost::asio::ip::tcp> const results;
-        // Make the connection on the IP address we get from a lookup
-        tcp::endpoint ep;
 
 };
 
