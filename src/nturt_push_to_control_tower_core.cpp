@@ -1,20 +1,39 @@
 #include <nturt_push_to_control_tower_core.hpp>
-
+                                        //
 int P2ctower_core::push2_ctower(std::string type, std::string sub_type, double value, double time ) {
-    std::string message = "{'name':[";
+    std::cout << type << sub_type << value << time << std::endl ;
+    std::string message = "{'name':['";
     message += type + "','" + sub_type + "'],'value':";
     message += std::to_string(value);
     message += "}";
     std::cout << message << std::endl;
-    std_msgs::String send_msg ;
-    send_msg.data = message ;
-    bridge_pub.publish(send_msg);
+    // std_msgs::String send_msg ;
+    // send_msg.data = message ;
+    // bridge_pub.publish(send_msg);
+    // ws.write(net::buffer(message));
+    ws.write(net::buffer(std::string("test")));
     /* publisher(message); */
     /* {name:["FWS","L"],value:1.1,time:123.4} */
     return OK;
 };
 
 int P2ctower_core::init_websocket(){
+    host = "localhost";
+    port = "8080";
+    text = "Constructed";
+    tcp::resolver resolver{ioc};
+    auto const results = resolver.resolve(host, port);
+    ep = net::connect(ws.next_layer(), results);
+    host += ':' + std::to_string(ep.port());
+    ws.set_option(websocket::stream_base::decorator(
+        [](websocket::request_type& req)
+        {
+            req.set(http::field::user_agent,
+                std::string(BOOST_BEAST_VERSION_STRING) +
+                    " websocket-client-coro");
+        }));
+    ws.handshake(host, "/");
+    ws.write(net::buffer(std::string("Successfully init webocket")));
     return OK;
 };
 

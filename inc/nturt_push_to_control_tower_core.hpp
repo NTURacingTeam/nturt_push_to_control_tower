@@ -11,7 +11,19 @@
 #include "can_msgs/Frame.h"
 #include "std_msgs/String.h"
 
+#include <boost/beast/core.hpp>
+#include <boost/beast/websocket.hpp>
+#include <boost/asio/connect.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <cstdlib>
+#include <string>
+
 #include <iostream>
+namespace beast = boost::beast;         // from <boost/beast.hpp>
+namespace http = beast::http;           // from <boost/beast/http.hpp>
+namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
+namespace net = boost::asio;            // from <boost/asio.hpp>
+using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 // define result state here
 #ifndef OK_ERR
@@ -35,6 +47,15 @@ class P2ctower_core {
         ros::Publisher bridge_pub ;
         ros::Subscriber can_sub ;
 
+        // for websocket start
+        std::string host;
+        std::string port;
+        std::string text;
+
+        net::io_context ioc;
+        websocket::stream<tcp::socket> ws{ioc};
+        boost::asio::ip::tcp::endpoint ep;
+        // for websocket end
 };
 
 #endif
