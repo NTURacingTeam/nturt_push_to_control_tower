@@ -42,19 +42,19 @@ class P2ctower_core {
         void CAN_Callback(const can_msgs::Frame::ConstPtr &msg);
 
     private :
-        Parser myparser;
+        Parser myparser_;
         std::shared_ptr<ros::NodeHandle> nh_;
-        ros::Publisher bridge_pub ;
-        ros::Subscriber can_sub ;
+        ros::Publisher bridge_pub_ ;
+        ros::Subscriber can_sub_ ;
 
         // for websocket start
-        std::string host;
-        std::string port;
-        std::string text;
+        std::string host_;
+        std::string port_;
+        std::string text_;
 
-        net::io_context ioc;
-        websocket::stream<tcp::socket> ws{ioc};
-        boost::asio::ip::tcp::endpoint ep;
+        net::io_context ioc_;
+        websocket::stream<tcp::socket> ws_{ioc_};
+        boost::asio::ip::tcp::endpoint ep_;
         // for websocket end
 };
 
