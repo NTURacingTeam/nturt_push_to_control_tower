@@ -40,11 +40,41 @@ P2ctower_core::P2ctower_core(std::shared_ptr<ros::NodeHandle> &nh) : nh_(nh) {
     myparser_.init_parser();
     bridge_pub_ = nh->advertise<std_msgs::String>("send_to_ctower_data", 50);
     can_sub_ = nh->subscribe("received_messages", 10, &P2ctower_core::CAN_Callback, this);
+
+    std::string filename("/home/ros/nturt_ws/src/nturt_push_to_control_tower/cp_can_id.csv");
+    std::vector<std::string> lines;
+    std::string line;
+    std::vector<int> can_ids;
+    std::ifstream input_file(filename);
+    if (!input_file.is_open()) {
+        std::cout << "Could not open the file - '"
+             << filename << "'" << std::endl;
+    }
+    else {
+        std::cout << "file open successfully" << std::endl; 
+    }
+
+    while (getline(input_file, line)){
+        lines.push_back(line);
+    }
+    
+    for (int i=0; i<lines.size(); i++) {
+        can_ids.push_back(std::stoi(lines[i], 0, 16));
+    }
+    input_file.close();
 }
 
 void P2ctower_core::CAN_Callback(const can_msgs::Frame::ConstPtr &msg){
     int data[8];
     double time = 0.0 ;
+
+    //std::cout << msg << std::endl; 
+     
+    //std::vector<std::pair<std::string, std::string> > can_data = myparser_.get_key(msg);
+    //for (int i=0; i<can_data.size(); i++) {
+    //    push2_ctower(can_data[i].first, can_data[i].second, myparser_.get_afd(can_data[i].first, can_data[i].second), time);
+    //} 
+
     if (myparser_.check_key(_CAN_FB1, "FWS") == OK) {
         if (myparser_.decode(_CAN_FB1, data) == OK) {
             push2_ctower("FWS", "L", myparser_.get_afd("FWS", "L"), time );
