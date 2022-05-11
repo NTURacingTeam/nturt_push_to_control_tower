@@ -56,6 +56,7 @@ class P2ctower_core {
         websocket::stream<tcp::socket> ws_{ioc_};
         boost::asio::ip::tcp::endpoint ep_;
         // for websocket end
+
 };
 
 #endif
