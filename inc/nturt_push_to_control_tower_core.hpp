@@ -41,11 +41,17 @@ class P2ctower_core {
         int init_websocket();
         void CAN_Callback(const can_msgs::Frame::ConstPtr &msg);
 
+
     private :
         Parser myparser_;
         std::shared_ptr<ros::NodeHandle> nh_;
         ros::Publisher bridge_pub_ ;
         ros::Subscriber can_sub_ ;
+        std::vector<std::pair<std::string,std::string>> can_data;
+
+        // for csv logger
+        std::string = csv_log_db_path_;
+        std::string = csv_log_buf_;
 
         // for websocket start
         std::string host_;
@@ -56,6 +62,10 @@ class P2ctower_core {
         websocket::stream<tcp::socket> ws_{ioc_};
         boost::asio::ip::tcp::endpoint ep_;
         // for websocket end
+
+        // for csv logger
+        int log_to_csv_(std::string file_name);
+        int csv_log_buf_append_(double one_data);
 
 };
 

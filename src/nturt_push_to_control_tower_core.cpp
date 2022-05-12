@@ -34,26 +34,53 @@ int P2ctower_core::init_websocket(){
     return OK;
 };
 
+int log_to_csv_(std::string file_name){
+    ofstream file_out;
+    std::cout << "Logging ..." << endl ;
+    std::cout << "path :" << csv_log_db_path_ << file_name << endl;
+    file_out.open(csv_log_db_path_ + file_name, std::ios_base::app);
+    file_out << csv_log_buf_ << "\n" ;
+    csv_log_buf_ = "";
+    file_out.close();
+    return OK;
+};
+
+int csv_log_buf_append_(double one_data){
+    csv_log_buf_ += std::to_string(one_data) + ",";
+    return OK;
+};
 
 P2ctower_core::P2ctower_core(std::shared_ptr<ros::NodeHandle> &nh) : nh_(nh) {
     std::cout << "node init" << std::endl ;
     myparser_.init_parser();
     bridge_pub_ = nh->advertise<std_msgs::String>("send_to_ctower_data", 50);
     can_sub_ = nh->subscribe("received_messages", 10, &P2ctower_core::CAN_Callback, this);
-}
+    csv_log_db_path_ = "/"; // need to be edited
+};
 
 void P2ctower_core::CAN_Callback(const can_msgs::Frame::ConstPtr &msg){
     int data[8];
     double time = 0.0 ;
-
+    can_data_ = myparser_.get_key(msg->id);
     std::cout << msg->id << std::endl;
-    std::vector<std::pair<std::string, std::string> > can_data = myparser_.get_key(msg->id);
+    csv_log_buf_append_(time);
+
     if (myparser_.check_key(msg->id, can_data[0].first) == OK) {
         if (myparser_.decode(msg->id, data) == OK) {
             for (int i=0; i<can_data.size(); i++) {
-                push2_ctower(can_data[i].first, can_data[i].second, myparser_.get_afd(can_data[i].first, can_data[i].second), time);
+                push2_ctower(
+                        can_data[i].first,
+                        can_data[i].second,
+                        myparser_.get_afd(
+                            can_data[i].first,
+                            can_data[i].second
+                        ),
+                        time);
+                csv_log_buf_append_(myparser_.get_afd(can_data[i].first, can_data[i].second));
             }
-        } 
-    } 
+        }
+    }
+
+    log_to_csv_(std::to_string(msg->id));
     myparser_.print_err_log();
 }
