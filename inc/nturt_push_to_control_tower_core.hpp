@@ -47,11 +47,11 @@ class P2ctower_core {
         std::shared_ptr<ros::NodeHandle> nh_;
         ros::Publisher bridge_pub_ ;
         ros::Subscriber can_sub_ ;
-        std::vector<std::pair<std::string,std::string>> can_data;
+        std::vector<std::pair<std::string,std::string>> can_data_;
 
         // for csv logger
-        std::string = csv_log_db_path_;
-        std::string = csv_log_buf_;
+        std::string csv_log_db_path_;
+        std::string csv_log_buf_;
 
         // for websocket start
         std::string host_;

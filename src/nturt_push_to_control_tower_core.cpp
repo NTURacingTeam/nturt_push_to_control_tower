@@ -34,10 +34,10 @@ int P2ctower_core::init_websocket(){
     return OK;
 };
 
-int log_to_csv_(std::string file_name){
-    ofstream file_out;
-    std::cout << "Logging ..." << endl ;
-    std::cout << "path :" << csv_log_db_path_ << file_name << endl;
+int P2ctower_core::log_to_csv_(std::string file_name){
+    std::ofstream file_out;
+    std::cout << "Logging ..." << std::endl ;
+    std::cout << "path :" << csv_log_db_path_ << file_name << std::endl;
     file_out.open(csv_log_db_path_ + file_name, std::ios_base::app);
     file_out << csv_log_buf_ << "\n" ;
     csv_log_buf_ = "";
@@ -45,7 +45,7 @@ int log_to_csv_(std::string file_name){
     return OK;
 };
 
-int csv_log_buf_append_(double one_data){
+int P2ctower_core::csv_log_buf_append_(double one_data){
     csv_log_buf_ += std::to_string(one_data) + ",";
     return OK;
 };
@@ -65,18 +65,18 @@ void P2ctower_core::CAN_Callback(const can_msgs::Frame::ConstPtr &msg){
     std::cout << msg->id << std::endl;
     csv_log_buf_append_(time);
 
-    if (myparser_.check_key(msg->id, can_data[0].first) == OK) {
+    if (myparser_.check_key(msg->id, can_data_[0].first) == OK) {
         if (myparser_.decode(msg->id, data) == OK) {
-            for (int i=0; i<can_data.size(); i++) {
+            for (int i=0; i<can_data_.size(); i++) {
                 push2_ctower(
-                        can_data[i].first,
-                        can_data[i].second,
+                        can_data_[i].first,
+                        can_data_[i].second,
                         myparser_.get_afd(
-                            can_data[i].first,
-                            can_data[i].second
+                            can_data_[i].first,
+                            can_data_[i].second
                         ),
                         time);
-                csv_log_buf_append_(myparser_.get_afd(can_data[i].first, can_data[i].second));
+                csv_log_buf_append_(myparser_.get_afd(can_data_[i].first, can_data_[i].second));
             }
         }
     }
