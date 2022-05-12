@@ -38,7 +38,7 @@ int P2ctower_core::log_to_csv_(std::string file_name){
     std::ofstream file_out;
     std::cout << "Logging ..." << std::endl ;
     std::cout << "path :" << csv_log_db_path_ << file_name << std::endl;
-    file_out.open(csv_log_db_path_ + file_name, std::ios_base::app);
+    file_out.open(csv_log_db_path_ + file_name + ".csv", std::ios_base::app);
     file_out << csv_log_buf_ << "\n" ;
     csv_log_buf_ = "";
     file_out.close();
@@ -55,7 +55,7 @@ P2ctower_core::P2ctower_core(std::shared_ptr<ros::NodeHandle> &nh) : nh_(nh) {
     myparser_.init_parser();
     bridge_pub_ = nh->advertise<std_msgs::String>("send_to_ctower_data", 50);
     can_sub_ = nh->subscribe("received_messages", 10, &P2ctower_core::CAN_Callback, this);
-    csv_log_db_path_ = "/"; // need to be edited
+    csv_log_db_path_ = "/home/ros/nturt_ws/output_files/"; // need to be edited
 };
 
 void P2ctower_core::CAN_Callback(const can_msgs::Frame::ConstPtr &msg){
