@@ -68,15 +68,13 @@ void P2ctower_core::CAN_Callback(const can_msgs::Frame::ConstPtr &msg){
     if (myparser_.check_key(msg->id, can_data_[0].first) == OK) {
         if (myparser_.decode(msg->id, data) == OK) {
             for (int i=0; i<can_data_.size(); i++) {
+                get_afd_value = myparser_.get_afd(can_data_[i].first, can_data_[i].second);
                 push2_ctower(
                         can_data_[i].first,
                         can_data_[i].second,
-                        myparser_.get_afd(
-                            can_data_[i].first,
-                            can_data_[i].second
-                        ),
+                        get_afd_value,
                         time);
-                csv_log_buf_append_(myparser_.get_afd(can_data_[i].first, can_data_[i].second));
+                csv_log_buf_append_(get_afd_value);
             }
         }
     }

@@ -63,9 +63,11 @@ class P2ctower_core {
         boost::asio::ip::tcp::endpoint ep_;
         // for websocket end
 
-        // for csv logger
+        // for csv logger start
         int log_to_csv_(std::string file_name);
         int csv_log_buf_append_(double one_data);
+        double get_afd_value;
+        // for csv logger end
 
 };
 
