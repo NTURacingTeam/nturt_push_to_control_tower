@@ -55,6 +55,7 @@ P2ctower_core::P2ctower_core(std::shared_ptr<ros::NodeHandle> &nh) : nh_(nh) {
     myparser_.init_parser();
     bridge_pub_ = nh->advertise<std_msgs::String>("send_to_ctower_data", 50);
     can_sub_ = nh->subscribe("received_messages", 10, &P2ctower_core::CAN_Callback, this);
+    can_sub_ = nh->subscribe("GPS", 10, &P2ctower_core::GPS_Callback, this);
     csv_log_db_path_ = "/home/ros/nturt_ws/output_files/"; // need to be edited
 };
 
@@ -81,4 +82,14 @@ void P2ctower_core::CAN_Callback(const can_msgs::Frame::ConstPtr &msg){
 
     log_to_csv_(std::to_string(msg->id));
     myparser_.print_err_log();
+}
+
+void P2ctower_core::GPS_Callback(const nav_msgs::Odometry::ConstPtr &msg){
+    double time = 0.0 ;
+    std::cout << "get nav msgs!!!" << std::endl ;
+    std::cout << msg->header.stamp << std::endl ;
+    std::cout << msg->pose.pose.position.x << std::endl ;
+    std::cout << msg->pose.pose.position.y << std::endl ;
+    std::cout << msg->pose.pose.orientation.x << std::endl ;
+    std::cout << msg->pose.pose.orientation.y << std::endl ;
 }

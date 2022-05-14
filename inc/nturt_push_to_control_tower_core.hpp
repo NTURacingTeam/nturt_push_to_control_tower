@@ -9,6 +9,7 @@
 #include <cp_can_id.hpp>
 #include <NTURT_CAN_Parser.hpp>
 #include "can_msgs/Frame.h"
+#include "nav_msgs/Odometry.h"
 #include "std_msgs/String.h"
 
 #include <boost/beast/core.hpp>
@@ -40,6 +41,7 @@ class P2ctower_core {
         int push2_ctower(std::string type, std::string sub_type, double value, double time );
         int init_websocket();
         void CAN_Callback(const can_msgs::Frame::ConstPtr &msg);
+        void GPS_Callback(const nav_msgs::Odometry::ConstPtr &msg);
 
 
     private :
