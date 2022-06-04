@@ -1,11 +1,6 @@
 #include <sstream>
 #include <nturt_push_to_control_tower_core.hpp>
 
-int push2_ctower(std::string type, std::string sub_type, double value, double time );
-
-void CAN_Callback(const can_msgs::Frame::ConstPtr &msg);
-
-
 // start up topic publisher (publish to nturt bridge to control tower)
 int main(int argc, char **argv){
     ros::init(argc, argv, "nturt_push_to_control_tower_node");
