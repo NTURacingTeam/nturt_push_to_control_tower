@@ -15,7 +15,7 @@ int P2ctower_core::push2_ctower(std::string type, std::string sub_type, double v
 };
 
 int P2ctower_core::init_websocket(){
-    host_ = "localhost";
+    host_ = "124.218.222.22";
     port_ = "8080";
     text_ = "Constructed";
     tcp::resolver resolver{ioc_};
