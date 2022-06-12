@@ -76,10 +76,10 @@ void P2ctower_core::CAN_Callback(const can_msgs::Frame::ConstPtr &msg){
             for (int i=0; i<can_data_.size(); i++) {
                 get_afd_value = myparser_.get_afd(can_data_[i].first, can_data_[i].second);
                 push2_ctower(
-                        can_data_[i].first,
-                        can_data_[i].second,
-                        get_afd_value,
-                        time);
+                    can_data_[i].first,
+                    can_data_[i].second,
+                    get_afd_value,
+                    time);
                 csv_log_buf_append_(get_afd_value);
             }
         }
@@ -92,9 +92,14 @@ void P2ctower_core::CAN_Callback(const can_msgs::Frame::ConstPtr &msg){
 void P2ctower_core::GPS_Callback(const nav_msgs::Odometry::ConstPtr &msg){
     double time = 0.0 ;
     std::cout << "get nav msgs!!!" << std::endl ;
-    std::cout << msg->header.stamp << std::endl ;
-    std::cout << msg->pose.pose.position.x << std::endl ;
-    std::cout << msg->pose.pose.position.y << std::endl ;
-    std::cout << msg->pose.pose.orientation.x << std::endl ;
-    std::cout << msg->pose.pose.orientation.y << std::endl ;
+    push2_ctower(
+        "GPS", "x",
+        msg->pose.pose.position.x,
+        time);
+        /* msg->header.stamp); */
+    push2_ctower(
+        "GPS", "y",
+        msg->pose.pose.position.y,
+        time);
+        /* msg->header.stamp); */
 }
