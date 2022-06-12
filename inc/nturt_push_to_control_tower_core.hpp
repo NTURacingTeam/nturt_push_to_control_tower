@@ -49,6 +49,7 @@ class P2ctower_core {
         std::shared_ptr<ros::NodeHandle> nh_;
         ros::Publisher bridge_pub_ ;
         ros::Subscriber can_sub_ ;
+        ros::Subscriber gps_sub_ ;
         std::vector<std::pair<std::string,std::string>> can_data_;
 
         // for csv logger

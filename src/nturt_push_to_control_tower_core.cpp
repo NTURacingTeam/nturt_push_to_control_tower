@@ -60,7 +60,7 @@ P2ctower_core::P2ctower_core(std::shared_ptr<ros::NodeHandle> &nh) : nh_(nh) {
     myparser_.init_parser();
     bridge_pub_ = nh->advertise<std_msgs::String>("send_to_ctower_data", 50);
     can_sub_ = nh->subscribe("received_messages", 10, &P2ctower_core::CAN_Callback, this);
-    can_sub_ = nh->subscribe("GPS", 10, &P2ctower_core::GPS_Callback, this);
+    gps_sub_ = nh->subscribe("GPS", 10, &P2ctower_core::GPS_Callback, this);
     csv_log_db_path_ = "/home/ros/nturt_ws/output_files/"; // need to be edited
 };
 
