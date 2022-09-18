@@ -1,25 +1,30 @@
-#ifndef NTURT_PUSH_TO_CONTROL_TOWER_CORE__H
-#define NTURT_PUSH_TO_CONTROL_TOWER_CORE__H
+#ifndef NTURT_PUSH_TO_CONTROL_TOWER_CORE_HPP
+#define NTURT_PUSH_TO_CONTROL_TOWER_CORE_HPP
 
-#include <cp_can_id.hpp>
-#include <NTURT_CAN_Parser.hpp>
-#include <string>
+// std include
+#include <cstdlib>
+#include <iostream>
 #include <memory>
+#include <sstream>
+#include <string>
+
+// boost include
+#include <boost/asio/connect.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/beast/core.hpp>
+#include <boost/beast/websocket.hpp>
+
+// ros include
 #include "ros/ros.h"
-#include <cp_can_id.hpp>
-#include <NTURT_CAN_Parser.hpp>
+
+// ros mags include
 #include "can_msgs/Frame.h"
 #include "nav_msgs/Odometry.h"
 #include "std_msgs/String.h"
 
-#include <boost/beast/core.hpp>
-#include <boost/beast/websocket.hpp>
-#include <boost/asio/connect.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <cstdlib>
-#include <string>
+// nturt include
+#include "can_parser.hpp"
 
-#include <iostream>
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
 namespace websocket = beast::websocket; // from <boost/beast/websocket.hpp>
@@ -33,7 +38,7 @@ using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 #define OK -1
 #define ERR 0
 
-#endif
+#endif // OK_ERR
 
 class P2ctower_core {
     public :
@@ -45,7 +50,7 @@ class P2ctower_core {
 
 
     private :
-        Parser myparser_;
+        CanParser myparser_;
         std::shared_ptr<ros::NodeHandle> nh_;
         ros::Publisher bridge_pub_ ;
         ros::Subscriber can_sub_ ;
@@ -71,7 +76,6 @@ class P2ctower_core {
         int csv_log_buf_append_(double one_data);
         double get_afd_value;
         // for csv logger end
-
 };
 
-#endif
+#endif // NTURT_PUSH_TO_CONTROL_TOWER_CORE_HPP

@@ -1,5 +1,4 @@
-#include <sstream>
-#include <nturt_push_to_control_tower_core.hpp>
+#include "nturt_push_to_control_tower_core.hpp"
 
 // start up topic publisher (publish to nturt bridge to control tower)
 int main(int argc, char **argv){
@@ -19,5 +18,3 @@ int main(int argc, char **argv){
     std::cout << "end succed" << std::endl;
     return OK ;
 };
-
-

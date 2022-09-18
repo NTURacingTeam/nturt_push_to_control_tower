@@ -1,5 +1,5 @@
-#include <nturt_push_to_control_tower_core.hpp>
-                                        //
+#include "nturt_push_to_control_tower_core.hpp"
+
 int P2ctower_core::push2_ctower(std::string type, std::string sub_type, double value, double time ) {
     std::cout << type << sub_type << value << time << std::endl ;
     std::string message = "{\"name\":[\"" + type + "\",\"" + sub_type + "\"],\"value\":" + std::to_string(value) + "}";
@@ -40,13 +40,13 @@ int P2ctower_core::init_websocket(){
 };
 
 int P2ctower_core::log_to_csv_(std::string file_name){
-    std::ofstream file_out;
-    std::cout << "Logging ..." << std::endl ;
-    std::cout << "path :" << csv_log_db_path_ << file_name << std::endl;
-    file_out.open(csv_log_db_path_ + file_name + ".csv", std::ios_base::app);
-    file_out << csv_log_buf_ << "\n" ;
-    csv_log_buf_ = "";
-    file_out.close();
+    // std::ofstream file_out;
+    // std::cout << "Logging ..." << std::endl ;
+    // std::cout << "path :" << csv_log_db_path_ << file_name << std::endl;
+    // file_out.open(csv_log_db_path_ + file_name + ".csv", std::ios_base::app);
+    // file_out << csv_log_buf_ << "\n" ;
+    // csv_log_buf_ = "";
+    // file_out.close();
     return OK;
 };
 
