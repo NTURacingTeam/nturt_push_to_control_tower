@@ -14,14 +14,13 @@ int P2ctower_core::push2_ctower(std::string type, std::string sub_type, double v
     return OK;
 };
 
-int P2ctower_core::init_websocket(){
-    host_ = "124.218.222.22";
-    port_ = "8080";
-    text_ = "Constructed";
-    tcp::resolver resolver{ioc_};
-    std::cout << "[debug]:tcp::resolver resolver{ioc_};" << std::endl;
-    auto const results = resolver.resolve(host_, port_);
-    std::cout << "[debug]:auto const results = resolver.resolve(host_, port_);" << std::endl ;
+int P2ctower_core::init_websocket(std::string host, std::string port){
+    host_ = host;
+    port_ = port;
+    // tcp::resolver resolvger_{ioc_};
+    std::cout << "[debug]:tcp::resolver resolver_{ioc_};" << std::endl;
+    auto const results = resolver_.resolve(host_, port_);
+    std::cout << "[debug]:auto const results = resolver_.resolve(host_, port_);" << std::endl ;
     ep_ = net::connect(ws_.next_layer(), results);
     std::cout << "[debug]:ep_ = net::connect(ws_.next_layer(), results);" << std::endl ;
     host_ += ':' + std::to_string(ep_.port());
