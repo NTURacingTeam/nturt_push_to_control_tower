@@ -38,67 +38,27 @@ int P2ctower_core::init_websocket(std::string host, std::string port){
     return OK;
 };
 
-int P2ctower_core::log_to_csv_(std::string file_name){
-    // std::ofstream file_out;
-    // std::cout << "Logging ..." << std::endl ;
-    // std::cout << "path :" << csv_log_db_path_ << file_name << std::endl;
-    // file_out.open(csv_log_db_path_ + file_name + ".csv", std::ios_base::app);
-    // file_out << csv_log_buf_ << "\n" ;
-    // csv_log_buf_ = "";
-    // file_out.close();
-    return OK;
-};
-
-int P2ctower_core::csv_log_buf_append_(double one_data){
-    csv_log_buf_ += std::to_string(one_data) + ",";
-    return OK;
-};
-
 P2ctower_core::P2ctower_core(std::shared_ptr<ros::NodeHandle> &nh) : nh_(nh) {
     std::cout << "node init" << std::endl ;
-    myparser_.init_parser();
-    bridge_pub_ = nh->advertise<std_msgs::String>("send_to_ctower_data", 50);
+    /* bridge_pub_ = nh->advertise<std_msgs::String>("send_to_ctower_data", 50); */
     can_sub_ = nh->subscribe("received_messages", 10, &P2ctower_core::CAN_Callback, this);
     gps_sub_ = nh->subscribe("GPS", 10, &P2ctower_core::GPS_Callback, this);
-    csv_log_db_path_ = "/home/ros/nturt_ws/output_files/"; // need to be edited
 };
 
 void P2ctower_core::CAN_Callback(const can_msgs::Frame::ConstPtr &msg){
-    int data[8];
-    double time = 0.0 ;
-    can_data_ = myparser_.get_key(msg->id);
-    std::cout << msg->id << std::endl;
-    csv_log_buf_append_(time);
-
-    if (myparser_.check_key(msg->id, can_data_[0].first) == OK) {
-        if (myparser_.decode(msg->id, data) == OK) {
-            for (int i=0; i<can_data_.size(); i++) {
-                get_afd_value = myparser_.get_afd(can_data_[i].first, can_data_[i].second);
-                push2_ctower(
-                    can_data_[i].first,
-                    can_data_[i].second,
-                    get_afd_value,
-                    time);
-                csv_log_buf_append_(get_afd_value);
-            }
-        }
-    }
-
-    log_to_csv_(std::to_string(msg->id));
-    myparser_.print_err_log();
 }
 
-void P2ctower_core::GPS_Callback(const nav_msgs::Odometry::ConstPtr &msg){
+void P2ctower_core::GPS_Callback(const gps_common::GPSFix::ConstPtr &msg){
     double time = 0.0 ;
     std::cout << "get nav msgs!!!" << std::endl ;
     push2_ctower(
         "GPS", "x",
-        msg->pose.pose.position.x,
+        0,
         time);
         /* msg->header.stamp); */
     push2_ctower(
         "GPS", "y",
-        msg->pose.pose.position.y,
+        0,
         time);
         /* msg->header.stamp); */
 }

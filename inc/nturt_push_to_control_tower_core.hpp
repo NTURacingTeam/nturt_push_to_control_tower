@@ -26,7 +26,7 @@
 // ros mags include
 #include "can_msgs/Frame.h"
 // #include "nav_msgs/Odometry.h"
-#include "gps_common/GPSFix"
+#include "gps_common/GPSFix.h"
 #include "std_msgs/String.h"
 
 // nturt include
@@ -97,10 +97,6 @@ class P2ctower_core {
         /// @brief Vector storing CAN data, used by can parser.
         std::vector<std::pair<std::string,std::string>> can_data_;
 
-        // for csv logger
-
-        // std::string csv_log_db_path_;
-        // std::string csv_log_buf_;
 
         // for websocket start
         
@@ -122,11 +118,7 @@ class P2ctower_core {
         /// @brief I don't know what this is. See detail in [here](https://www.boost.org/doc/libs/master/libs/beast/example/websocket/client/async/websocket_client_async.cpp).
         boost::asio::ip::tcp::endpoint ep_;
 
-        // for csv logger start
-        // int log_to_csv_(std::string file_name);
-        // int csv_log_buf_append_(double one_data);
-        // double get_afd_value;
-        // for csv logger end
+        double get_afd_value;
 };
 
 #endif // NTURT_PUSH_TO_CONTROL_TOWER_CORE_HPP
