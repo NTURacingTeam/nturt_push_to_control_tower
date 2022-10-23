@@ -8,6 +8,8 @@ find_package(catkin REQUIRED
         roscpp_serialization
         nav_msgs
         can_msgs
+        nturt_ros_interface
+        std_msgs
 )
 
 find_package(nturt_can_parser REQUIRED)

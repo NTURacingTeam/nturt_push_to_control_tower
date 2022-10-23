@@ -1,13 +1,13 @@
 #include "nturt_push_to_control_tower_core.hpp"
 
-int P2ctower_core::push2_ctower(std::string type, std::string sub_type, double value, double time ) {
-    std::cout << type << sub_type << value << time << std::endl ;
-    std::string message = "{\"name\":[\"" + type + "\",\"" + sub_type + "\"],\"value\":" + std::to_string(value) + "}";
-    std::cout << message << std::endl;
+int P2ctower_core::push2_ctower(std::string name, double value, double time) {
+    std::cout << name << value << time << std::endl ;
+    /* std::string message = "{\"name\":[\"" + type + "\",\"" + sub_type + "\"],\"value\":" + std::to_string(value) + "}"; */
+    /* std::cout << message << std::endl; */
     // std_msgs::String send_msg ;
     // send_msg.data = message ;
     // bridge_pub_.publish(send_msg);
-    ws_.write(net::buffer(message));
+    /* ws_.write(net::buffer(message)); */
     // ws_.write(net::buffer(std::string("test")));
     /* publisher(message); */
     /* {name:["FWS","L"],value:1.1,time:123.4} */
@@ -38,27 +38,71 @@ int P2ctower_core::init_websocket(std::string host, std::string port){
     return OK;
 };
 
-P2ctower_core::P2ctower_core(std::shared_ptr<ros::NodeHandle> &nh) : nh_(nh) {
+
+P2ctower_core::P2ctower_core(std::shared_ptr<ros::NodeHandle> &_nh) : 
+    nh_(_nh), timestemp_last_(ros::Time::now().toSec()),
+    state_sub_(_nh->subscribe("/node_state", 10, &P2ctower_core::onState, this)),
+    register_clt_(_nh->serviceClient<nturt_ros_interface::RegisterCanNotification>("/register_can_notification")) {
+
     std::cout << "node init" << std::endl ;
-    /* bridge_pub_ = nh->advertise<std_msgs::String>("send_to_ctower_data", 50); */
-    can_sub_ = nh->subscribe("received_messages", 10, &P2ctower_core::CAN_Callback, this);
-    gps_sub_ = nh->subscribe("GPS", 10, &P2ctower_core::GPS_Callback, this);
+
+    // register to can parser
+    // wait until "/register_can_notification" service is avalible
+    if(!ros::service::waitForService("/register_can_notification", 10000)) {
+        ROS_FATAL("register to can parser timeout after 10 seconds");
+        ros::shutdown();
+    }
+
+    // construct register call
+    nturt_ros_interface::RegisterCanNotification register_srv;
+    register_srv.request.node_name = ros::this_node::getName();
+
+    /*
+        data name registering to be notified
+        brake -> brake level (front box 2)
+        accelerator_1 -> accelerator level 1 (front box 2)
+        accelerator_2 -> accelerator level 2 (front box 2)
+        brake_micro -> brake trigger (front box 2)
+    */
+    register_srv.request.data_name = {"brake", "accelerator_1", "accelerator_2", "accelerator_micro"};
+
+    // call service
+    if(!register_clt_.call(register_srv)) {
+        ROS_FATAL("register to can parser failed");
+        ros::shutdown();
+    }
+
+    // subscribe to the register topic
+    notification_sub_ = nh_->subscribe(register_srv.response.topic, 10, &P2ctower_core::onNotification, this);
+
+    gps_sub_ = nh_->subscribe("GPS", 10, &P2ctower_core::GPS_Callback, this);
 };
+
+void P2ctower_core::onNotification(const nturt_ros_interface::UpdateCanData::ConstPtr &_msg) {
+    std::cout << "notification called" << std::endl ;
+    double time = 0;
+    push2_ctower(_msg->name, _msg->data, time);
+}
+
+void P2ctower_core::onState(const std_msgs::Bool::ConstPtr &_msg) {
+    is_activated_ = _msg->data;
+    std::cout << "is_activated: " << is_activated_ ;
+}
 
 void P2ctower_core::CAN_Callback(const can_msgs::Frame::ConstPtr &msg){
 }
 
 void P2ctower_core::GPS_Callback(const gps_common::GPSFix::ConstPtr &msg){
+    double lon = 0;
+    double lat = 0;
     double time = 0.0 ;
     std::cout << "get nav msgs!!!" << std::endl ;
     push2_ctower(
-        "GPS", "x",
-        0,
+        "GPS_lon", lon,
         time);
         /* msg->header.stamp); */
     push2_ctower(
-        "GPS", "y",
-        0,
+        "GPS_lat", lat,
         time);
         /* msg->header.stamp); */
 }

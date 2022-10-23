@@ -22,6 +22,8 @@
 
 // ros include
 #include "ros/ros.h"
+#include "std_msgs/Bool.h"
+#include "std_msgs/String.h"
 
 // ros mags include
 #include "can_msgs/Frame.h"
@@ -31,6 +33,9 @@
 
 // nturt include
 #include "can_parser.hpp"
+#include "nturt_ros_interface/GetCanData.h"
+#include "nturt_ros_interface/RegisterCanNotification.h"
+#include "nturt_ros_interface/UpdateCanData.h"
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
@@ -54,14 +59,7 @@ using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 class P2ctower_core {
     public :
         P2ctower_core(std::shared_ptr<ros::NodeHandle> &nh);
-        
-        /**
-         * @brief Brief explanation of the function.
-         * @param[in] _argument Brief explanation of the argument.
-         * @return Brief explanation of the return.
-         */
-        int push2_ctower(std::string type, std::string sub_type, double value, double time );
-        
+
         /**
          * @brief Initialize websocket daemon.
          * @param[in] host the IP of the host
@@ -69,24 +67,43 @@ class P2ctower_core {
          */
         int init_websocket(std::string host, std::string port);
 
-        /// @brief A callback function every time 
-        void CAN_Callback(const can_msgs::Frame::ConstPtr &msg);
-        
-        // void GPS_Callback(const nav_msgs::Odometry::ConstPtr &msg);
-        
-        /// @brief 
-        void GPS_Callback(const gps_common::GPSFix::ConstPtr &msg);
-
-
     private :
 
-        /// @brief Containes can parser.
-        CanParser myparser_;
+        /**
+         * @brief Brief explanation of the function.
+         * @param[in] _argument Brief explanation of the argument.
+         * @return Brief explanation of the return.
+         */
+        int push2_ctower(std::string name, double value, double time );
 
-        /// @brief Node handler.
+        /// @brief A callback function every time 
+        void CAN_Callback(const can_msgs::Frame::ConstPtr &msg);
+
+        // void GPS_Callback(const nav_msgs::Odometry::ConstPtr &msg);
+
+        /// @brief
+        void GPS_Callback(const gps_common::GPSFix::ConstPtr &msg);
+
+        /// @brief Callback function when receiving message form can data notification.
+        void onNotification(const nturt_ros_interface::UpdateCanData::ConstPtr &_msg);
+
+        /// @brief Callback function when receiving message from topic "/node_state".
+        void onState(const std_msgs::Bool::ConstPtr &_msg);
+
+        /// @brief Pointer to ros node handle.
         std::shared_ptr<ros::NodeHandle> nh_;
 
-        // ros::Publisher bridge_pub_ ;
+        /// @brief Publisher to "/publish_can_frame", for publishing can frames.
+        ros::Publisher publish_frame_pub_;
+
+        /// @brief Subscriber to can data notification topic, for getting can data when they got updated.
+        ros::Subscriber notification_sub_;
+
+        /// @brief Subscriber to "/node_state", for being controlled by nturt_state_controller.
+        ros::Subscriber state_sub_;
+
+        /// @brief Service client to "/register_can_notification", for registering to notification.
+        ros::ServiceClient register_clt_;
 
         /// @brief Subscriber for the topic about CAN data.
         ros::Subscriber can_sub_ ;
@@ -99,7 +116,7 @@ class P2ctower_core {
 
 
         // for websocket start
-        
+
         /// @brief The IP of the host server.
         std::string host_;
 
@@ -118,7 +135,18 @@ class P2ctower_core {
         /// @brief I don't know what this is. See detail in [here](https://www.boost.org/doc/libs/master/libs/beast/example/websocket/client/async/websocket_client_async.cpp).
         boost::asio::ip::tcp::endpoint ep_;
 
-        double get_afd_value;
+        // data input
+        /// @brief Signal to activate this node controlled by topic "node_state".
+        bool is_activated_ = false;
+
+        // internal control parameters
+        /// @brief Last timestemp when "update" function is called [s].
+        double timestemp_last_;
+
+        // accelerator pedal position sensor (apps)
+        /// @brief Time duration to trigger accelerator pedal position sensor error.
+        double apps_duration_ = 0;
+
 };
 
 #endif // NTURT_PUSH_TO_CONTROL_TOWER_CORE_HPP
