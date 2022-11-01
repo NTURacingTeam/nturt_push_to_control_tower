@@ -11,7 +11,7 @@ int main(int argc, char **argv){
 
     // initialize torque controller
     P2ctower_core p2ctower_core(nodehandle_ptr);
-    /* p2ctower_core.init_websocket("124.218.222.22", "8080"); */
+    p2ctower_core.init_websocket("124.218.222.22", "8080");
 
     // frequancy 1000 Hz
     ros::Rate loop_rate(1000);

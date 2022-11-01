@@ -1,13 +1,13 @@
 #include "nturt_push_to_control_tower_core.hpp"
 
 int P2ctower_core::push2_ctower(std::string name, double value, double time) {
-    std::cout << name << value << time << std::endl ;
-    /* std::string message = "{\"name\":[\"" + type + "\",\"" + sub_type + "\"],\"value\":" + std::to_string(value) + "}"; */
-    /* std::cout << message << std::endl; */
-    // std_msgs::String send_msg ;
-    // send_msg.data = message ;
-    // bridge_pub_.publish(send_msg);
-    /* ws_.write(net::buffer(message)); */
+    /* std::cout << name << ": " << value << ", "<< time << std::endl ; */
+    std::string message = "{\"name\":\"" + name + "\",\"value\":" + std::to_string(value) + "}";
+    std::cout << message << std::endl;
+    /* std_msgs::String send_msg ; */
+    /* send_msg.data = message ; */
+    /* bridge_pub_.publish(send_msg); */
+    ws_.write(net::buffer(message));
     // ws_.write(net::buffer(std::string("test")));
     /* publisher(message); */
     /* {name:["FWS","L"],value:1.1,time:123.4} */
@@ -85,8 +85,10 @@ void P2ctower_core::onNotification(const nturt_ros_interface::UpdateCanData::Con
 }
 
 void P2ctower_core::onState(const std_msgs::Bool::ConstPtr &_msg) {
-    is_activated_ = _msg->data;
-    std::cout << "is_activated: " << is_activated_ ;
+    if (is_activated_ != _msg->data) {
+        is_activated_ = _msg->data;
+    }
+    /* std::cout << "is_activated: " << is_activated_ << std::endl; */
 }
 
 void P2ctower_core::CAN_Callback(const can_msgs::Frame::ConstPtr &msg){
