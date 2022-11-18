@@ -71,10 +71,45 @@ P2ctower_core::P2ctower_core(std::shared_ptr<ros::NodeHandle> &_nh) :
 
     register_srv.request.data_name = {
         // front_box_1
+        "front_left_wheel_speed",
+        "front_right_wheel_speed",
+        "front_left_tyre_temperature_1",
+        "front_left_tyre_temperature_2",
+        "front_right_tyre_temperature_1",
+        "front_right_tyre_temperature_2",
+        // front_box_2
         "brake",
         "accelerator_1",
         "accelerator_2",
-        "accelerator_micro"
+        "steer_angle",
+        "oil_pressure",
+        "accelerator_micro",
+        "brake_micro",
+        // imu_acceleration
+        "imu_acceleration_x",
+        "imu_acceleration_y",
+        "imu_acceleration_z",
+        // imu_gyro
+        "imu_gyro_x",
+        "imu_gyro_y",
+        "imu_gyro_z",
+        // imu_quaternion
+        "imu_quaternion_w",
+        "imu_quaternion_x",
+        "imu_quaternion_y",
+        "imu_quaternion_z",
+        // muc_data
+        "control_board_temperature",
+        "motor_temperature",
+        "motor_speed",
+        "input_voltage",
+        // rear_box_1
+        "rear_left_wheel_speed",
+        "rear_right_wheel_speed",
+        "rear_left_tyre_temperature_1",
+        "rear_left_tyre_temperature_2",
+        "rear_right_tyre_temperature_1",
+        "rear_right_tyre_temperature_2"
     };
 
     // call service
@@ -85,6 +120,8 @@ P2ctower_core::P2ctower_core(std::shared_ptr<ros::NodeHandle> &_nh) :
 
     // subscribe to the register topic
     notification_sub_ = nh_->subscribe(register_srv.response.topic, 10, &P2ctower_core::onNotification, this);
+
+    // need to get can data using service "/get_can_data" for frame "mcu_command" of data "torque_command", "inverter_enable"
 
     check_ws_connection_timer_ = nh_->createTimer(ros::Duration(3), timer_check_and_retry_websocket_connection);
 
