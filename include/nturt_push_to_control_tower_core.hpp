@@ -32,7 +32,6 @@
 #include "std_msgs/String.h"
 
 // nturt include
-#include "can_parser.hpp"
 #include "nturt_ros_interface/GetCanData.h"
 #include "nturt_ros_interface/RegisterCanNotification.h"
 #include "nturt_ros_interface/UpdateCanData.h"

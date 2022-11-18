@@ -62,14 +62,13 @@ P2ctower_core::P2ctower_core(std::shared_ptr<ros::NodeHandle> &_nh) :
     nturt_ros_interface::RegisterCanNotification register_srv;
     register_srv.request.node_name = ros::this_node::getName();
 
-    /*
-        data name registering to be notified
-        brake -> brake level (front box 2)
-        accelerator_1 -> accelerator level 1 (front box 2)
-        accelerator_2 -> accelerator level 2 (front box 2)
-        brake_micro -> brake trigger (front box 2)
-    */
-    register_srv.request.data_name = {"brake", "accelerator_1", "accelerator_2", "accelerator_micro"};
+    register_srv.request.data_name = {
+        // front_box_1
+        "brake",
+        "accelerator_1",
+        "accelerator_2",
+        "accelerator_micro"
+    };
 
     // call service
     if(!register_clt_.call(register_srv)) {

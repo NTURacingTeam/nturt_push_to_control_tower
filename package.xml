@@ -1,19 +1,23 @@
 <package>
-        <name>nturt_push_to_control_tower</name>
-        <version>0.5.0</version><!--major.minor.patch-->
-        <description>push to control tower</description>
-        <maintainer email="kuojack0114@gmail.com">Chemmy-Jack</maintainer>
-        <license>TODO: License declaration</license>
-        
-        <buildtool_depend>catkin</buildtool_depend>
-        <build_depend>nturt_can_parser</build_depend>
-        <build_depend>nav_msgs</build_depend>
-        <build_depend>can_msgs</build_depend>
-        <build_depend>Boost</build_depend>
-        
-        <build_depend>Boost</build_depend>
-        <run_depend>nturt_can_parser</run_depend>
-        <run_depend>nav_msgs</run_depend>
-        <run_depend>can_msgs</run_depend>
-        <run_depend>Boost</run_depend>
+    <name>nturt_push_to_control_tower</name>
+    <version>0.5.0</version>
+    <description>push to control tower</description>
+    <maintainer email="kuojack0114@gmail.com">Chemmy-Jack</maintainer>
+    <license>TODO</license>
+
+    <!-- build dependencies -->
+    <buildtool_depend>catkin</buildtool_depend>
+    <build_depend>Boost</build_depend>
+    <build_depend>gps_common</build_depend>
+    <build_depend>nturt_ros_interface</build_depend>
+    <build_depend>roscpp</build_depend>
+    <build_depend>std_msgs</build_depend>
+
+
+    <!-- runtime dependencies -->
+    <run_depend>Boost</run_depend>
+    <run_depend>gps_common</run_depend>
+    <run_depend>nturt_ros_interface</run_depend>
+    <run_depend>roscpp</run_depend>
+    <run_depend>std_msgs</run_depend>
 </package>
