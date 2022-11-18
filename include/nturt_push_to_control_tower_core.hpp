@@ -116,11 +116,20 @@ class P2ctower_core {
 
         // for websocket start
 
+        /// @brief timer to reconnect to ws if disconnected
+        ros::Timer check_ws_connection_timer_ ;
+
+        /// @brief check if websockt connection is on. If not, try to reconnect
+        void timer_check_and_retry_websocket_connection(const ros::TimerEvent&);
+
+        // @brief if websocket is connected, set true
+        bool ws_connected_ ;
+
         /// @brief The IP of the host server.
-        std::string host_;
+        std::string ws_hostIP_;
 
         /// @brief The specified port to use to connect to eh server. 
-        std::string port_;
+        std::string ws_port_;
 
         /// @brief Io_context for resolver_ and ws_. See detail in [here](https://www.boost.org/doc/libs/master/libs/beast/example/websocket/client/async/websocket_client_async.cpp).
         net::io_context ioc_;
@@ -149,3 +158,4 @@ class P2ctower_core {
 };
 
 #endif // NTURT_PUSH_TO_CONTROL_TOWER_CORE_HPP
+

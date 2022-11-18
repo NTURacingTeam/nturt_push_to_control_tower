@@ -16,15 +16,15 @@ int P2ctower_core::push2_ctower(std::string name, double value, double time) {
 
 int P2ctower_core::init_websocket(std::string host, std::string port){
     try {
-        host_ = host;
-        port_ = port;
+        ws_hostIP_ = host;
+        ws_port_ = port;
         // tcp::resolver resolvger_{ioc_};
         std::cout << "[debug]:tcp::resolver resolver_{ioc_};" << std::endl;
-        auto const results = resolver_.resolve(host_, port_);
-        std::cout << "[debug]:auto const results = resolver_.resolve(host_, port_);" << std::endl ;
+        auto const results = resolver_.resolve(ws_hostIP_, ws_port_);
+        std::cout << "[debug]:auto const results = resolver_.resolve(ws_hostIP_, ws_port_);" << std::endl ;
         ep_ = net::connect(ws_.next_layer(), results);
         std::cout << "[debug]:ep_ = net::connect(ws_.next_layer(), results);" << std::endl ;
-        host_ += ':' + std::to_string(ep_.port());
+        ws_hostIP_ += ':' + std::to_string(ep_.port());
         ws_.set_option(websocket::stream_base::decorator(
             [](websocket::request_type& req)
             {
@@ -33,16 +33,23 @@ int P2ctower_core::init_websocket(std::string host, std::string port){
                         " websocket-client-coro");
             }));
         std::cout << "[debug]:set_option" << std::endl ;
-        ws_.handshake(host_, "/");
-        std::cout << "[debug]:ws_.handshake(host_, '');" << std::endl ;
+        ws_.handshake(ws_hostIP_, "/");
+        std::cout << "[debug]:ws_.handshake(ws_hostIP_, '');" << std::endl ;
         ws_.write(net::buffer(std::string("Successfully init webocket")));
+        ws_connected_ = true;
         return OK;
-    } catch (error) {
-        std::cout << "init websocket fail" << std::endl;
+    } catch (int error) {
+        std::cout << "init websocket fail, error code: " << error << std::endl;
+        ws_connected_ = false;
         return ERR;
     }
 };
 
+void P2ctower_core::timer_check_and_retry_websocket_connection(const ros::TimerEvent& event){
+    if ( !(ws_connected_) ) {
+        std::cout << "ws not connected" << std::endl;
+    }
+};
 
 P2ctower_core::P2ctower_core(std::shared_ptr<ros::NodeHandle> &_nh) : 
     nh_(_nh), timestemp_last_(ros::Time::now().toSec()),
@@ -78,6 +85,8 @@ P2ctower_core::P2ctower_core(std::shared_ptr<ros::NodeHandle> &_nh) :
 
     // subscribe to the register topic
     notification_sub_ = nh_->subscribe(register_srv.response.topic, 10, &P2ctower_core::onNotification, this);
+
+    check_ws_connection_timer_ = nh_->createTimer(ros::Duration(3), timer_check_and_retry_websocket_connection);
 
     gps_sub_ = nh_->subscribe("GPS", 10, &P2ctower_core::GPS_Callback, this);
 };
