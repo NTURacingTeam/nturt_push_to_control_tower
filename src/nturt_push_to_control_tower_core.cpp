@@ -123,7 +123,7 @@ P2ctower_core::P2ctower_core(std::shared_ptr<ros::NodeHandle> &_nh) :
 
     // need to get can data using service "/get_can_data" for frame "mcu_command" of data "torque_command", "inverter_enable"
 
-    check_ws_connection_timer_ = nh_->createTimer(ros::Duration(3), timer_check_and_retry_websocket_connection);
+    // check_ws_connection_timer_ = nh_->createTimer(ros::Duration(3), timer_check_and_retry_websocket_connection);
 
     gps_sub_ = nh_->subscribe("GPS", 10, &P2ctower_core::GPS_Callback, this);
 };
