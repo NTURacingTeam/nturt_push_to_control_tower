@@ -116,7 +116,7 @@ class P2ctower_core {
         std::vector<std::pair<std::string,std::string>> can_data_;
 
         /// @brief timer, runs every specific time
-        ros::Timer timer_ ;
+        ros::Timer push_buffer_timer_ ;
 
         /// @brief buffer for each frames' data
         std::map<std::string, double> frame_buffer_;

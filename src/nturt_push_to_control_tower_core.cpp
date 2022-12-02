@@ -133,7 +133,7 @@ P2ctower_core::P2ctower_core(std::shared_ptr<ros::NodeHandle> &_nh) :
 
     // for sending message with timer
 
-    timer_ = nh_->createTimer(ros::Duration(1), &P2ctower_core::timer_callback_, this); // called every duration(n) second
+    push_buffer_timer_ = nh_->createTimer(ros::Duration(0.5), &P2ctower_core::timer_callback_, this); // called every duration(n) second
 
     /* std::vector<std::string>::iterator ptr = frames.begin(); */
     /* for (ptr = frames.begin(); ptr < frames.end(); ptr++) frame_buffer_[*ptr] = 0; */
@@ -193,12 +193,10 @@ void P2ctower_core::GPS_Callback(const gps_common::GPSFix::ConstPtr &msg){
     double lat = 0;
     double time = 0.0 ;
     std::cout << "get nav msgs!!!" << std::endl ;
-    push2_ctower(
-        "GPS_lon", lon,
-        time);
+    Store_to_frame_buffer_( "GPS_lon", lon, time);
+    Store_to_frame_buffer_( "GPS_lat", lat, time);
+    /* push2_ctower( "GPS_lon", lon, time); */
         /* msg->header.stamp); */
-    push2_ctower(
-        "GPS_lat", lat,
-        time);
+    /* push2_ctower( "GPS_lat", lat, time); */
         /* msg->header.stamp); */
 }
