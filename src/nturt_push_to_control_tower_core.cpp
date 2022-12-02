@@ -141,7 +141,7 @@ P2ctower_core::P2ctower_core(std::shared_ptr<ros::NodeHandle> &_nh) :
 };
 
 void P2ctower_core::timer_callback_(const ros::TimerEvent& event) {
-    ROS_INFO("timer triggered");
+    /* ROS_INFO("timer triggered"); */
     push_buffer_to_ctower();
 };
 
