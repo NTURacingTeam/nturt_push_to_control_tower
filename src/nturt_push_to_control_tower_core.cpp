@@ -19,11 +19,11 @@ int P2ctower_core::init_websocket(std::string host, std::string port){
         ws_hostIP_ = host;
         ws_port_ = port;
         // tcp::resolver resolvger_{ioc_};
-        std::cout << "[debug]:tcp::resolver resolver_{ioc_};" << std::endl;
+        ROS_INFO("[debug]:tcp::resolver resolver_{ioc_};");
         auto const results = resolver_.resolve(ws_hostIP_, ws_port_);
-        std::cout << "[debug]:auto const results = resolver_.resolve(ws_hostIP_, ws_port_);" << std::endl ;
+        ROS_INFO("[debug]:auto const results = resolver_.resolve(ws_hostIP_, ws_port_);");
         ep_ = net::connect(ws_.next_layer(), results);
-        std::cout << "[debug]:ep_ = net::connect(ws_.next_layer(), results);" << std::endl ;
+        ROS_INFO("[debug]:ep_ = net::connect(ws_.next_layer(), results);");
         ws_hostIP_ += ':' + std::to_string(ep_.port());
         ws_.set_option(websocket::stream_base::decorator(
             [](websocket::request_type& req)
@@ -32,9 +32,9 @@ int P2ctower_core::init_websocket(std::string host, std::string port){
                     std::string(BOOST_BEAST_VERSION_STRING) +
                         " websocket-client-coro");
             }));
-        std::cout << "[debug]:set_option" << std::endl ;
+        ROS_INFO("[debug]:set_option");
         ws_.handshake(ws_hostIP_, "/");
-        std::cout << "[debug]:ws_.handshake(ws_hostIP_, '');" << std::endl ;
+        ROS_INFO("[debug]:ws_.handshake(ws_hostIP_, '');");
         ws_.write(net::buffer(std::string("Successfully init webocket")));
         ws_connected_ = true;
         return OK;
@@ -69,7 +69,7 @@ P2ctower_core::P2ctower_core(std::shared_ptr<ros::NodeHandle> &_nh) :
     nturt_ros_interface::RegisterCanNotification register_srv;
     register_srv.request.node_name = ros::this_node::getName();
 
-    register_srv.request.data_name = {
+    std::vector<std::string > frames = {
         // front_box_1
         "front_left_wheel_speed",
         "front_right_wheel_speed",
@@ -112,6 +112,10 @@ P2ctower_core::P2ctower_core(std::shared_ptr<ros::NodeHandle> &_nh) :
         "rear_right_tyre_temperature_2"
     };
 
+    register_srv.request.data_name = frames;
+    ROS_FATAL("attention");
+    /* std::cout << ((register_srv.request.data_name)) << std::endl; */
+
     // call service
     if(!register_clt_.call(register_srv)) {
         ROS_FATAL("register to can parser failed");
@@ -126,12 +130,52 @@ P2ctower_core::P2ctower_core(std::shared_ptr<ros::NodeHandle> &_nh) :
     // check_ws_connection_timer_ = nh_->createTimer(ros::Duration(3), timer_check_and_retry_websocket_connection);
 
     gps_sub_ = nh_->subscribe("GPS", 10, &P2ctower_core::GPS_Callback, this);
+
+    // for sending message with timer
+
+    timer_ = nh_->createTimer(ros::Duration(1), &P2ctower_core::timer_callback_, this); // called every duration(n) second
+
+    /* std::vector<std::string>::iterator ptr = frames.begin(); */
+    /* for (ptr = frames.begin(); ptr < frames.end(); ptr++) frame_buffer_[*ptr] = 0; */
+
 };
 
+void P2ctower_core::timer_callback_(const ros::TimerEvent& event) {
+    ROS_INFO("timer triggered");
+    push_buffer_to_ctower();
+};
+
+void P2ctower_core::push_buffer_to_ctower() {
+    std::string message = "{\"batch\":{" ;
+    std::map<std::string, double>::iterator i;
+
+    for (std::map<std::string, double>::iterator i = frame_buffer_.begin() ; i != frame_buffer_.end() ; i++) {
+        /* cout << i->first << " => " << i->second << '\n'; */
+        if (i != frame_buffer_.begin()) message += "," ;
+        message += "\"" + i->first + "\""  + ":" + std::to_string(i->second) ;
+    };
+
+    message += "}}" ;
+
+    ROS_FATAL("message below");
+    std::cout << message << std::endl;
+
+    frame_buffer_.clear();
+    ws_.write(net::buffer(message));
+    /* {name:["FWS","L"],value:1.1,time:123.4} */
+}
+
+
 void P2ctower_core::onNotification(const nturt_ros_interface::UpdateCanData::ConstPtr &_msg) {
-    std::cout << "notification called" << std::endl ;
+    /* std::cout << "notification called" << std::endl ; */
     double time = 0;
-    push2_ctower(_msg->name, _msg->data, time);
+    /* push2_ctower(_msg->name, _msg->data, time); */
+    Store_to_frame_buffer_(_msg->name, _msg->data, time);
+}
+
+int P2ctower_core::Store_to_frame_buffer_(std::string name, double value, double time) {
+    frame_buffer_[name] = value ;
+    return OK;
 }
 
 void P2ctower_core::onState(const std_msgs::Bool::ConstPtr &_msg) {

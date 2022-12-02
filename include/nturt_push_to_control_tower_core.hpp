@@ -13,6 +13,7 @@
 #include <memory>
 #include <sstream>
 #include <string>
+#include <map>
 
 // boost include
 #include <boost/asio/connect.hpp>
@@ -24,6 +25,7 @@
 #include "ros/ros.h"
 #include "std_msgs/Bool.h"
 #include "std_msgs/String.h"
+#include <ros/console.h>
 
 // ros mags include
 #include "can_msgs/Frame.h"
@@ -112,6 +114,21 @@ class P2ctower_core {
 
         /// @brief Vector storing CAN data, used by can parser.
         std::vector<std::pair<std::string,std::string>> can_data_;
+
+        /// @brief timer, runs every specific time
+        ros::Timer timer_ ;
+
+        /// @brief buffer for each frames' data
+        std::map<std::string, double> frame_buffer_;
+
+        /// @brief store value to buffer for each frames' data
+        int Store_to_frame_buffer_(std::string name, double value, double time);
+
+        /// @brief send buffer to remote monitor
+        void push_buffer_to_ctower();
+
+        /// @brief callback function for the timer
+        void timer_callback_(const ros::TimerEvent& event);
 
 
         // for websocket start
