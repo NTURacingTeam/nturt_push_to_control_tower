@@ -113,7 +113,7 @@ P2ctower_core::P2ctower_core(std::shared_ptr<ros::NodeHandle> &_nh) :
     };
 
     register_srv.request.data_name = frames;
-    ROS_FATAL("attention");
+    /* ROS_FATAL("attention"); */
     /* std::cout << ((register_srv.request.data_name)) << std::endl; */
 
     // call service
@@ -157,8 +157,8 @@ void P2ctower_core::push_buffer_to_ctower() {
 
     message += "}}" ;
 
-    ROS_FATAL("message below");
-    std::cout << message << std::endl;
+    /* ROS_FATAL("message below"); */
+    /* std::cout << message << std::endl; */
 
     frame_buffer_.clear();
     ws_.write(net::buffer(message));
