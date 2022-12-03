@@ -136,13 +136,13 @@ P2ctower_core::P2ctower_core(std::shared_ptr<ros::NodeHandle> &_nh) :
     ros::param::get("~retry_ws_duration", retry_ws_duration) ;
     ros::param::get("~push_buffer_duration", push_buffer_duration) ;
 
-    check_ws_connection_timer_ = nh_->createTimer(ros::Duration(3), &P2ctower_core::timer_check_and_retry_websocket_connection_, this);
+    check_ws_connection_timer_ = nh_->createTimer(ros::Duration(retry_ws_duration), &P2ctower_core::timer_check_and_retry_websocket_connection_, this);
 
     gps_sub_ = nh_->subscribe("GPS_fix", 10, &P2ctower_core::GPS_Callback, this);
 
     // for sending message with timer
 
-    push_buffer_timer_ = nh_->createTimer(ros::Duration(0.1), &P2ctower_core::push_buffer_timer_callback_, this); // called every duration(n) second
+    push_buffer_timer_ = nh_->createTimer(ros::Duration(push_buffer_duration), &P2ctower_core::push_buffer_timer_callback_, this); // called every duration(n) second
 
     /* std::vector<std::string>::iterator ptr = frames.begin(); */
     /* for (ptr = frames.begin(); ptr < frames.end(); ptr++) frame_buffer_[*ptr] = 0; */
