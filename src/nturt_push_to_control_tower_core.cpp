@@ -128,7 +128,7 @@ P2ctower_core::P2ctower_core(std::shared_ptr<ros::NodeHandle> &_nh) :
     }
 
     // subscribe to the register topic
-    notification_sub_ = nh_->subscribe(register_srv.response.topic, 10, &P2ctower_core::onNotification, this);
+    notification_sub_ = nh_->subscribe(register_srv.response.topic, 100, &P2ctower_core::onNotification, this);
 
     // need to get can data using service "/get_can_data" for frame "mcu_command" of data "torque_command", "inverter_enable"
     double retry_ws_duration ;

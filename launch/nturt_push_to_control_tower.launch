@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<launch>
+    <node pkg="nturt_push_to_control_tower" name="nturt_push_to_control_tower_node" type="nturt_push_to_control_tower" output="screen">
+        <param name="retry_ws_duration" type="double" value="2.0" />
+        <param name="push_buffer_duration" type="double" value="0.1" />
+    </node>
+</launch>
