@@ -131,6 +131,10 @@ P2ctower_core::P2ctower_core(std::shared_ptr<ros::NodeHandle> &_nh) :
     notification_sub_ = nh_->subscribe(register_srv.response.topic, 10, &P2ctower_core::onNotification, this);
 
     // need to get can data using service "/get_can_data" for frame "mcu_command" of data "torque_command", "inverter_enable"
+    double retry_ws_duration ;
+    double  push_buffer_duration ;
+    ros::param::get("~retry_ws_duration", retry_ws_duration) ;
+    ros::param::get("~push_buffer_duration", push_buffer_duration) ;
 
     check_ws_connection_timer_ = nh_->createTimer(ros::Duration(3), &P2ctower_core::timer_check_and_retry_websocket_connection_, this);
 
