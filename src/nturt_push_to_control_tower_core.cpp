@@ -15,16 +15,18 @@ int P2ctower_core::push2_ctower(std::string name, double value, double time) {
 };
 
 int P2ctower_core::init_websocket(std::string host, std::string port){
+    ws_hostIP_ = host;
+    ws_port_ = port;
+    return connect_to_ws();
+};
+
+int P2ctower_core::connect_to_ws() {
     try {
-        ws_hostIP_ = host;
-        ws_port_ = port;
-        // tcp::resolver resolvger_{ioc_};
-        ROS_INFO("[debug]:tcp::resolver resolver_{ioc_};");
         auto const results = resolver_.resolve(ws_hostIP_, ws_port_);
-        ROS_INFO("[debug]:auto const results = resolver_.resolve(ws_hostIP_, ws_port_);");
+        /* ROS_INFO("[debug]:auto const results = resolver_.resolve(ws_hostIP_, ws_port_);"); */
         ep_ = net::connect(ws_.next_layer(), results);
-        ROS_INFO("[debug]:ep_ = net::connect(ws_.next_layer(), results);");
-        ws_hostIP_ += ':' + std::to_string(ep_.port());
+        /* ROS_INFO("[debug]:ep_ = net::connect(ws_.next_layer(), results);"); */
+        std::string ws_hostIP_PORT = ws_hostIP_ + ':' + std::to_string(ep_.port());
         ws_.set_option(websocket::stream_base::decorator(
             [](websocket::request_type& req)
             {
@@ -32,22 +34,25 @@ int P2ctower_core::init_websocket(std::string host, std::string port){
                     std::string(BOOST_BEAST_VERSION_STRING) +
                         " websocket-client-coro");
             }));
-        ROS_INFO("[debug]:set_option");
-        ws_.handshake(ws_hostIP_, "/");
-        ROS_INFO("[debug]:ws_.handshake(ws_hostIP_, '');");
+        /* ROS_INFO("[debug]:set_option"); */
+        ws_.handshake(ws_hostIP_PORT, "/");
+        /* ROS_INFO("[debug]:ws_.handshake(ws_hostIP_PORT, '');"); */
         ws_.write(net::buffer(std::string("Successfully init webocket")));
-        ws_connected_ = true;
+        ROS_INFO("connect to ws succeeded");
         return OK;
-    } catch (int error) {
-        std::cout << "init websocket fail, error code: " << error << std::endl;
-        ws_connected_ = false;
+    } catch (std::exception&  error) {
+        ROS_WARN("connect to ws failed");
+        /* std::string error_str(error.what()); */
+        /* ROS_INFO(error_str); */
         return ERR;
     }
-};
+}
 
-void P2ctower_core::timer_check_and_retry_websocket_connection(const ros::TimerEvent& event){
-    if ( !(ws_connected_) ) {
-        std::cout << "ws not connected" << std::endl;
+void P2ctower_core::timer_check_and_retry_websocket_connection_(const ros::TimerEvent& event){
+    /* ROS_INFO("retry ws function called"); */
+    if ( !(ws_.is_open()) ) {
+        /* ROS_FATAL("ws not connected, trying to reconnect"); */
+        connect_to_ws();
     }
 };
 
@@ -127,20 +132,20 @@ P2ctower_core::P2ctower_core(std::shared_ptr<ros::NodeHandle> &_nh) :
 
     // need to get can data using service "/get_can_data" for frame "mcu_command" of data "torque_command", "inverter_enable"
 
-    // check_ws_connection_timer_ = nh_->createTimer(ros::Duration(3), timer_check_and_retry_websocket_connection);
+    check_ws_connection_timer_ = nh_->createTimer(ros::Duration(3), &P2ctower_core::timer_check_and_retry_websocket_connection_, this);
 
     gps_sub_ = nh_->subscribe("GPS", 10, &P2ctower_core::GPS_Callback, this);
 
     // for sending message with timer
 
-    push_buffer_timer_ = nh_->createTimer(ros::Duration(0.5), &P2ctower_core::timer_callback_, this); // called every duration(n) second
+    push_buffer_timer_ = nh_->createTimer(ros::Duration(0.1), &P2ctower_core::push_buffer_timer_callback_, this); // called every duration(n) second
 
     /* std::vector<std::string>::iterator ptr = frames.begin(); */
     /* for (ptr = frames.begin(); ptr < frames.end(); ptr++) frame_buffer_[*ptr] = 0; */
 
 };
 
-void P2ctower_core::timer_callback_(const ros::TimerEvent& event) {
+void P2ctower_core::push_buffer_timer_callback_(const ros::TimerEvent& event) {
     /* ROS_INFO("timer triggered"); */
     push_buffer_to_ctower();
 };
@@ -161,7 +166,11 @@ void P2ctower_core::push_buffer_to_ctower() {
     /* std::cout << message << std::endl; */
 
     frame_buffer_.clear();
-    ws_.write(net::buffer(message));
+    try {
+        ws_.write(net::buffer(message));
+    } catch (std::exception& error) {
+      /* ROS_FATAL(error.what()) ; */
+    };
     /* {name:["FWS","L"],value:1.1,time:123.4} */
 }
 

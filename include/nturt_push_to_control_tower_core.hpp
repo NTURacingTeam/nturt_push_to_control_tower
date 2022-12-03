@@ -128,7 +128,7 @@ class P2ctower_core {
         void push_buffer_to_ctower();
 
         /// @brief callback function for the timer
-        void timer_callback_(const ros::TimerEvent& event);
+        void push_buffer_timer_callback_(const ros::TimerEvent& event);
 
 
         // for websocket start
@@ -136,8 +136,11 @@ class P2ctower_core {
         /// @brief timer to reconnect to ws if disconnected
         ros::Timer check_ws_connection_timer_ ;
 
+        /// @brief try to connect to ws
+        int connect_to_ws() ;
+
         /// @brief check if websockt connection is on. If not, try to reconnect
-        void timer_check_and_retry_websocket_connection(const ros::TimerEvent&);
+        void timer_check_and_retry_websocket_connection_(const ros::TimerEvent&);
 
         // @brief if websocket is connected, set true
         bool ws_connected_ ;
