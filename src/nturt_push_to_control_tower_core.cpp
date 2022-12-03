@@ -201,12 +201,10 @@ void P2ctower_core::onState(const std_msgs::Bool::ConstPtr &_msg) {
 void P2ctower_core::CAN_Callback(const can_msgs::Frame::ConstPtr &msg){
 }
 
-void P2ctower_core::GPS_Callback(const gps_common::GPSFix::ConstPtr &msg){
-    double lon = 0;
-    double lat = 0;
+void P2ctower_core::GPS_Callback(const gps_common::GPSFix::ConstPtr &_msg){
     double time = 0.0 ;
-    Store_to_frame_buffer_( "GPS_lon", lon, time);
-    Store_to_frame_buffer_( "GPS_lat", lat, time);
+    Store_to_frame_buffer_( "GPS_lon", _msg->longitude, time);
+    Store_to_frame_buffer_( "GPS_lat", _msg->latitude, time);
     /* push2_ctower( "GPS_lon", lon, time); */
         /* msg->header.stamp); */
     /* push2_ctower( "GPS_lat", lat, time); */
