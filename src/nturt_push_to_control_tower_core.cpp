@@ -138,7 +138,7 @@ P2ctower_core::P2ctower_core(std::shared_ptr<ros::NodeHandle> &_nh) :
 
     check_ws_connection_timer_ = nh_->createTimer(ros::Duration(3), &P2ctower_core::timer_check_and_retry_websocket_connection_, this);
 
-    gps_sub_ = nh_->subscribe("GPS", 10, &P2ctower_core::GPS_Callback, this);
+    gps_sub_ = nh_->subscribe("GPS_fix", 10, &P2ctower_core::GPS_Callback, this);
 
     // for sending message with timer
 
@@ -205,7 +205,6 @@ void P2ctower_core::GPS_Callback(const gps_common::GPSFix::ConstPtr &msg){
     double lon = 0;
     double lat = 0;
     double time = 0.0 ;
-    std::cout << "get nav msgs!!!" << std::endl ;
     Store_to_frame_buffer_( "GPS_lon", lon, time);
     Store_to_frame_buffer_( "GPS_lat", lat, time);
     /* push2_ctower( "GPS_lon", lon, time); */
