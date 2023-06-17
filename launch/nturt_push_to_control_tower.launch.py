@@ -10,7 +10,7 @@ def generate_launch_description():
     arguments.append(
         DeclareLaunchArgument(
             "ip",
-            default_value="124.218.222.22",
+            default_value="140.112.14.14",
             description="The ip of the control tower.",
         )
     )
