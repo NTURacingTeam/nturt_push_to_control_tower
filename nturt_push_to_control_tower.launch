@@ -1,3 +1,0 @@
-<launch>
-    <node name="push_to_control_tower" pkg="nturt_push_control_tower" type="nturt_push_control_tower_node" />
-</launch>
