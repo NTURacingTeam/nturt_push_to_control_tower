@@ -1,5 +1,38 @@
 #include "nturt_push_to_control_tower/push_to_control_tower.hpp"
 
+// glibc include
+#include <string.h>
+
+// std include
+#include <fstream>
+#include <functional>
+#include <memory>
+#include <sstream>
+#include <string>
+
+// boost include
+#include <boost/asio/connect.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/beast/core.hpp>
+#include <boost/beast/websocket.hpp>
+
+// ros2 include
+#include <rclcpp/rclcpp.hpp>
+
+// ros2 message include
+#include <can_msgs/msg/frame.hpp>
+#include <geometry_msgs/msg/twist_stamped.hpp>
+#include <sensor_msgs/msg/nav_sat_fix.hpp>
+
+// nturt include
+#include "nturt_can_config.h"
+#include "nturt_can_config_logger-binutil.h"
+
+namespace http = boost::beast::http;
+namespace websocket = boost::beast::websocket;
+namespace net = boost::asio;
+using namespace std::chrono_literals;
+
 PushToControlTower::PushToControlTower(rclcpp::NodeOptions options)
     : Node("nturt_push_to_control_tower_node", options),
       can_sub_(this->create_subscription<can_msgs::msg::Frame>(
@@ -13,8 +46,11 @@ PushToControlTower::PushToControlTower(rclcpp::NodeOptions options)
           "/vel", 10,
           std::bind(&PushToControlTower::onGpsVel, this,
                     std::placeholders::_1))),
+      update_system_stats_timer_(this->create_wall_timer(
+          1s, std::bind(&PushToControlTower::update_system_stats_timer_callback,
+                        this))),
       send_data_timer_(this->create_wall_timer(
-          100ms,
+          200ms,
           std::bind(&PushToControlTower::send_data_timer_callback, this))),
       check_ws_connection_timer_(this->create_wall_timer(
           3s, std::bind(&PushToControlTower::check_ws_connection_timer_callback,
@@ -23,6 +59,9 @@ PushToControlTower::PushToControlTower(rclcpp::NodeOptions options)
       ws_port_(this->declare_parameter("port", "")) {
   // init can_rx_
   memset(&can_rx_, 0, sizeof(can_rx_));
+
+  // init cpu stats
+  cpu_stats_.update();
 
   if (connect_to_ws() != 0) {
     RCLCPP_ERROR(
@@ -52,34 +91,83 @@ void PushToControlTower::onGpsVel(
   gps_vel_ = *msg;
 }
 
+void PushToControlTower::update_system_stats_timer_callback() {
+  CpuStats cpu_stats;
+  cpu_stats.update();
+  cpu_usage_ = get_cpu_usage(cpu_stats_, cpu_stats);
+  cpu_stats_ = cpu_stats;
+
+  // TODO: Figure the thermalzone of rpi cpu
+  cpu_temperature_ = get_thermalzone_temperature(0);
+
+  memory_stats_.update();
+  memory_usage_ = memory_stats_.get_memory_usage();
+  swap_usage_ = memory_stats_.get_swap_usage();
+
+  disk_usage_ = get_disk_usage("/");
+}
+
 void PushToControlTower::send_data_timer_callback() {
   ss_ << "{\"batch\":{";
 
+  // vcu_status
+  VCU_Status_t* vcu_status = &can_rx_.VCU_Status;
+  ss_ << "\"vcu_status\":" << static_cast<int>(vcu_status->VCU_Status)
+      << ",\"vcu_error_code\":" << vcu_status->VCU_Error_Code;
+
+  // rear_sensor_status
+  REAR_SENSOR_Status_t* rear_sensor_status = &can_rx_.REAR_SENSOR_Status;
+  ss_ << ",\"rear_sensor_status\":"
+      << static_cast<int>(rear_sensor_status->REAR_SENSOR_Status)
+      << ",\"rear_sensor_error_code\":"
+      << rear_sensor_status->REAR_SENSOR_Error_Code;
+
   // front_sensor_1
   FRONT_SENSOR_1_t* front_sensor_1 = &can_rx_.FRONT_SENSOR_1;
-  ss_ << "\"front_left_wheel_speed\":"
-      << front_sensor_1->FRONT_SENSOR_Front_Left_Wheel_Speed_phys
-      << ",\"front_right_wheel_speed\":"
-      << front_sensor_1->FRONT_SENSOR_Front_Right_Wheel_Speed_phys
-      << ",\"front_left_tire_temperature\":"
-      << front_sensor_1->FRONT_SENSOR_Front_Left_Tire_Temperature_phys
-      << ",\"front_right_tire_temperature\":"
-      << front_sensor_1->FRONT_SENSOR_Front_Right_Tire_Temperature_phys;
+  ss_ << ",\"brake\":" << front_sensor_1->FRONT_SENSOR_Brake_phys
+      << ",\"accelerator_1\":"
+      << front_sensor_1->FRONT_SENSOR_Accelerator_1_phys
+      << ",\"accelerator_2\":"
+      << front_sensor_1->FRONT_SENSOR_Accelerator_2_phys
+      << ",\"steer_angle\":" << front_sensor_1->FRONT_SENSOR_Steer_Angle
+      << ",\"brake_micro\":"
+      << static_cast<int>(front_sensor_1->FRONT_SENSOR_Accelerator_Micro)
+      << ",\"accelerator_micro\":"
+      << static_cast<int>(front_sensor_1->FRONT_SENSOR_Brake_Micro);
 
   // front_sensor_2
   FRONT_SENSOR_2_t* front_sensor_2 = &can_rx_.FRONT_SENSOR_2;
-  ss_ << ",\"brake\":" << front_sensor_2->FRONT_SENSOR_Brake_phys
-      << ",\"accelerator_1\":"
-      << front_sensor_2->FRONT_SENSOR_Accelerator_1_phys
-      << ",\"accelerator_2\":"
-      << front_sensor_2->FRONT_SENSOR_Accelerator_2_phys
+  ss_ << ",\"front_left_wheel_speed\":"
+      << front_sensor_2->FRONT_SENSOR_Front_Left_Wheel_Speed_phys
+      << ",\"front_right_wheel_speed\":"
+      << front_sensor_2->FRONT_SENSOR_Front_Right_Wheel_Speed_phys
       << ",\"front_brake_pressure\":"
       << front_sensor_2->FRONT_SENSOR_Front_Brake_Pressure_phys
-      << ",\"accelerator_micro\":"
-      << static_cast<int>(front_sensor_2->FRONT_SENSOR_Accelerator_Micro)
-      << ",\"brake_micro\":"
-      << static_cast<int>(front_sensor_2->FRONT_SENSOR_Brake_Micro)
-      << ",\"steering_angle\":" << front_sensor_2->FRONT_SENSOR_Steer_Angle;
+      << ",\"rear_brake_pressure\":"
+      << front_sensor_2->FRONT_SENSOR_Rear_Brake_Pressure_phys
+      << ",\"front_left_suspension\":"
+      << front_sensor_2->FRONT_SENSOR_Front_Left_Suspension_phys
+      << ",\"front_right_suspension\":"
+      << front_sensor_2->FRONT_SENSOR_Front_Right_Suspension_phys;
+
+  // front_sensor_3
+  FRONT_SENSOR_3_t* front_sensor_3 = &can_rx_.FRONT_SENSOR_3;
+  ss_ << ",\"front_left_tire_temperature_1\":"
+      << front_sensor_3->FRONT_SENSOR_Front_Left_Tire_Temperature_1_phys
+      << ",\"front_left_tire_temperature_2\":"
+      << front_sensor_3->FRONT_SENSOR_Front_Left_Tire_Temperature_2_phys
+      << ",\"front_left_tire_temperature_3\":"
+      << front_sensor_3->FRONT_SENSOR_Front_Left_Tire_Temperature_3_phys
+      << ",\"front_left_tire_temperature_4\":"
+      << front_sensor_3->FRONT_SENSOR_Front_Left_Tire_Temperature_4_phys
+      << ",\"front_right_tire_temperature_1\":"
+      << front_sensor_3->FRONT_SENSOR_Front_Right_Tire_Temperature_1_phys
+      << ",\"front_right_tire_temperature_2\":"
+      << front_sensor_3->FRONT_SENSOR_Front_Right_Tire_Temperature_2_phys
+      << ",\"front_right_tire_temperature_3\":"
+      << front_sensor_3->FRONT_SENSOR_Front_Right_Tire_Temperature_3_phys
+      << ",\"front_right_tire_temperature_4\":"
+      << front_sensor_3->FRONT_SENSOR_Front_Right_Tire_Temperature_4_phys;
 
   // rear_sensor_1
   REAR_SENSOR_1_t* rear_sensor_1 = &can_rx_.REAR_SENSOR_1;
@@ -87,24 +175,59 @@ void PushToControlTower::send_data_timer_callback() {
       << rear_sensor_1->REAR_SENSOR_Rear_Left_Wheel_Speed_phys
       << ",\"rear_right_wheel_speed\":"
       << rear_sensor_1->REAR_SENSOR_Rear_Right_Wheel_Speed_phys
-      << ",\"rear_left_tire_temperature\":"
-      << rear_sensor_1->REAR_SENSOR_Rear_Left_Tire_Temperature_phys
-      << ",\"rear_right_tire_temperature\":"
-      << rear_sensor_1->REAR_SENSOR_Rear_Right_Tire_Temperature_phys;
+      << ",\"rear_left_suspension\":"
+      << rear_sensor_1->REAR_SENSOR_Rear_Left_Suspension_phys
+      << ",\"rear_right_suspension\":"
+      << rear_sensor_1->REAR_SENSOR_Rear_Right_Suspension_phys;
 
   // rear_sensor_2
   REAR_SENSOR_2_t* rear_sensor_2 = &can_rx_.REAR_SENSOR_2;
-  ss_ << ",\"rear_brake_pressure\":"
-      << rear_sensor_2->REAR_SENSOR_Rear_Brake_Pressure_phys;
+  ss_ << ",\"rear_left_tire_temperature_1\":"
+      << rear_sensor_2->REAR_SENSOR_Rear_Left_Tire_Temperature_1_phys
+      << ",\"rear_left_tire_temperature_2\":"
+      << rear_sensor_2->REAR_SENSOR_Rear_Left_Tire_Temperature_2_phys
+      << ",\"rear_left_tire_temperature_3\":"
+      << rear_sensor_2->REAR_SENSOR_Rear_Left_Tire_Temperature_3_phys
+      << ",\"rear_left_tire_temperature_4\":"
+      << rear_sensor_2->REAR_SENSOR_Rear_Left_Tire_Temperature_4_phys
+      << ",\"rear_right_tire_temperature_1\":"
+      << rear_sensor_2->REAR_SENSOR_Rear_Right_Tire_Temperature_1_phys
+      << ",\"rear_right_tire_temperature_2\":"
+      << rear_sensor_2->REAR_SENSOR_Rear_Right_Tire_Temperature_2_phys
+      << ",\"rear_right_tire_temperature_3\":"
+      << rear_sensor_2->REAR_SENSOR_Rear_Right_Tire_Temperature_3_phys
+      << ",\"rear_right_tire_temperature_4\":"
+      << rear_sensor_2->REAR_SENSOR_Rear_Right_Tire_Temperature_4_phys;
 
-  // inverter
-  ss_ << ",\"control_board_temperature\":"
+  // inverter_fault_codes
+  INV_Fault_Codes_t* inverter_fault_codes = &can_rx_.INV_Fault_Codes;
+  ss_ << ",\"inverter_post_fault_lo\":"
+      << inverter_fault_codes->INV_Post_Fault_Lo
+      << ",\"inverter_post_fault_hi\":"
+      << inverter_fault_codes->INV_Post_Fault_Hi
+      << ",\"inverter_run_fault_lo\":" << inverter_fault_codes->INV_Run_Fault_Lo
+      << ",\"inverter_run_fault_hi\":"
+      << inverter_fault_codes->INV_Run_Fault_Hi;
+
+  // inverter_fast_info
+  INV_Fast_Info_t* inverter_fast_info = &can_rx_.INV_Fast_Info;
+  ss_ << ",\"torque_command\":"
+      << inverter_fast_info->INV_Fast_Torque_Command_phys
+      << ",\"torque_feedback\":"
+      << inverter_fast_info->INV_Fast_Torque_Feedback_phys
+      << ",\"motor_speed\":" << inverter_fast_info->INV_Fast_Motor_Speed
+      << ",\"inverter_dc_bus_voltage\":"
+      << inverter_fast_info->INV_Fast_DC_Bus_Voltage_phys;
+
+  // inverter other
+  ss_ << ",\"inverter_control_board_temperature\":"
       << can_rx_.INV_Temperature_Set_2.INV_Control_Board_Temp_phys
+      << ",\"inverter_hot_spot_temperature\":"
+      << can_rx_.INV_Temperature_Set_3.INV_Hot_Spot_Temp_phys
       << ",\"motor_temperature\":"
       << can_rx_.INV_Temperature_Set_3.INV_Motor_Temp_phys
-      << ",\"motor_speed\":" << can_rx_.INV_Fast_Info.INV_Fast_Motor_Speed
-      << ",\"input_voltage\":"
-      << can_rx_.INV_Fast_Info.INV_Fast_DC_Bus_Voltage_phys;
+      << ",\"inverter_dc_bus_current\":"
+      << can_rx_.INV_Current_Info.INV_DC_Bus_Current_phys;
 
   // imu_acceleration
   IMU_Acceleration_t* imu_acceleration = &can_rx_.IMU_Acceleration;
@@ -128,6 +251,21 @@ void PushToControlTower::send_data_timer_callback() {
       << ",\"imu_quaternion_x\":" << imu_quaternion->IMU_Quaternion_X_phys
       << ",\"imu_quaternion_y\":" << imu_quaternion->IMU_Quaternion_Y_phys
       << ",\"imu_quaternion_z\":" << imu_quaternion->IMU_Quaternion_Z_phys;
+
+  // gps_fix
+  ss_ << ",\"gps_fix_latitude\":" << gps_fix_.latitude
+      << ",\"gps_fix_longitude\":" << gps_fix_.longitude
+      << ",\"gps_fix_altitude\":" << gps_fix_.altitude;
+
+  // gps_vel
+  ss_ << ",\"gps_vel_linear_x\":" << gps_vel_.twist.linear.x
+      << ",\"gps_vel_linear_y\":" << gps_vel_.twist.linear.y;
+
+  // system stats
+  ss_ << ",\"cpu_usage\":" << cpu_usage_
+      << ",\"cpu_temperature\":" << cpu_temperature_
+      << ",\"memory_usage\":" << memory_usage_
+      << ",\"swap_usage\":" << swap_usage_ << ",\"disk_usage\":" << disk_usage_;
 
   ss_ << "}}";
 

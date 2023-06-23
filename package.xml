@@ -10,6 +10,7 @@
     <license>TODO</license>
 
     <!-- general dependencies-->
+    <depend>boost</depend>
     <depend>can_msgs</depend>
     <depend>geometry_msgs</depend>
     <depend>nturt_can_config</depend>

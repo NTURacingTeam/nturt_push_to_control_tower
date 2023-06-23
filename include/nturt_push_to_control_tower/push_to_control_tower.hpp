@@ -9,12 +9,7 @@
 #ifndef NTURT_PUSH_TO_CONTROL_TOWER_HPP
 #define NTURT_PUSH_TO_CONTROL_TOWER_HPP
 
-// glibc include
-#include <string.h>
-
 // std include
-#include <functional>
-#include <map>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -36,13 +31,12 @@
 // nturt include
 #include "nturt_can_config.h"
 #include "nturt_can_config_logger-binutil.h"
+#include "nturt_push_to_control_tower/system_stats.hpp"
 
-namespace beast = boost::beast;          // from <boost/beast.hpp>
-namespace http = beast::http;            // from <boost/beast/http.hpp>
-namespace websocket = beast::websocket;  // from <boost/beast/websocket.hpp>
-namespace net = boost::asio;             // from <boost/asio.hpp>
-using tcp = boost::asio::ip::tcp;        // from <boost/asio/ip/tcp.hpp>
-using namespace std::chrono_literals;    // from <chrono>
+namespace http = boost::beast::http;
+namespace websocket = boost::beast::websocket;
+namespace net = boost::asio;
+using tcp = boost::asio::ip::tcp;
 
 /**
  * @author Jack b10502016@ntu.edu.tw
@@ -63,6 +57,9 @@ class PushToControlTower : public rclcpp::Node {
   /// @brief Callback function when receiving message from "/vel".
   void onGpsVel(const std::shared_ptr<geometry_msgs::msg::TwistStamped> msg);
 
+  /// @brief Timed callback function for updating system stats.
+  void update_system_stats_timer_callback();
+
   /// @brief Timed callback function for sending data to control tower.
   void send_data_timer_callback();
 
@@ -70,7 +67,7 @@ class PushToControlTower : public rclcpp::Node {
   /// established. If not, try to reconnect.
   void check_ws_connection_timer_callback();
 
-  /// @brief try to connect to ws
+  /// @brief Function for connecting to websoccket.
   int connect_to_ws();
 
   /// @brief ROS2 sbscriber to "/from_can_bus", for receiving can signal.
@@ -82,6 +79,9 @@ class PushToControlTower : public rclcpp::Node {
   /// @brief ROS2 sbscriber to "/vel", for receiving GPS signal.
   rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr
       gps_vel_sub_;
+
+  /// @brief ROS2 timer for updating system stats.
+  rclcpp::TimerBase::SharedPtr update_system_stats_timer_;
 
   /// @brief ROS2 timer for sending data to control tower.
   rclcpp::TimerBase::SharedPtr send_data_timer_;
@@ -103,7 +103,7 @@ class PushToControlTower : public rclcpp::Node {
 
   /// @brief I don't know what this is. See detail in
   /// [here](https://www.boost.org/doc/libs/master/libs/beast/example/websocket/client/async/websocket_client_async.cpp).
-  boost::asio::ip::tcp::endpoint ep_;
+  tcp::endpoint ep_;
 
   /// @brief The IP of the control tower.
   std::string ws_ip_;
@@ -119,6 +119,27 @@ class PushToControlTower : public rclcpp::Node {
 
   /// @brief Struct for storing "/vel" message data.
   geometry_msgs::msg::TwistStamped gps_vel_;
+
+  /// @brief Class for monitoring cpu stats.
+  CpuStats cpu_stats_;
+
+  /// @brief CPU usage;
+  double cpu_usage_;
+
+  /// @brief CPU temperature.
+  double cpu_temperature_;
+
+  /// @brief Class for monitoring memory stats.
+  MemoryStats memory_stats_;
+
+  /// @brief Memory usage;
+  double memory_usage_;
+
+  /// @brief Swap usage;
+  double swap_usage_;
+
+  /// @brief Disk usage.
+  double disk_usage_;
 
   /// @brief String stream for sending data to control tower.
   std::stringstream ss_;

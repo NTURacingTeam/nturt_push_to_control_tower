@@ -26,6 +26,7 @@ include_directories(
 # library: nturt_push_to_control_tower
 add_library(${PROJECT_NAME} SHARED
         src/push_to_control_tower.cpp
+        src/system_stats.cpp
 )
 target_link_libraries(nturt_push_to_control_tower
         ${Boost_LIBRARIES}
@@ -55,6 +56,18 @@ ament_target_dependencies(${PROJECT_NAME}_node
         rclcpp
 )
 
+# test: increasing_data_test_node
+add_executable(increasing_data_test_node
+        test/increasing_data_test.cpp
+)
+ament_target_dependencies(increasing_data_test_node
+        can_msgs
+        geometry_msgs
+        nturt_can_config
+        rclcpp
+        sensor_msgs
+)
+
 # install headers
 install(DIRECTORY include/${PROJECT_NAME}
         DESTINATION include
@@ -68,7 +81,7 @@ install(TARGETS ${PROJECT_NAME}
 )
 
 # install applications
-install(TARGETS ${PROJECT_NAME}_node
+install(TARGETS ${PROJECT_NAME}_node increasing_data_test_node
         DESTINATION lib/${PROJECT_NAME}
 )
 
