@@ -13,7 +13,8 @@
     <depend>boost</depend>
     <depend>can_msgs</depend>
     <depend>geometry_msgs</depend>
-    <depend>nturt_can_config</depend>
+    <depend>nturt_can_config</depend>    
+    <depend>nturt_ros_interface</depend>
     <depend>rclcpp</depend>
     <depend>rclcpp_components</depend>
     <depend>sensor_msgs</depend>

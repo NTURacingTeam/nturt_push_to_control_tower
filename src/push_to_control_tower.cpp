@@ -27,6 +27,7 @@
 // nturt include
 #include "nturt_can_config.h"
 #include "nturt_can_config_logger-binutil.h"
+#include "nturt_ros_interface/msg/system_stats.hpp"
 
 namespace http = boost::beast::http;
 namespace websocket = boost::beast::websocket;
@@ -36,7 +37,7 @@ using namespace std::chrono_literals;
 PushToControlTower::PushToControlTower(rclcpp::NodeOptions options)
     : Node("nturt_push_to_control_tower_node", options),
       can_sub_(this->create_subscription<can_msgs::msg::Frame>(
-          "/from_can_bus", 10,
+          "/from_can_bus", 50,
           std::bind(&PushToControlTower::onCan, this, std::placeholders::_1))),
       gps_fix_sub_(this->create_subscription<sensor_msgs::msg::NavSatFix>(
           "/fix", 10,
@@ -46,9 +47,11 @@ PushToControlTower::PushToControlTower(rclcpp::NodeOptions options)
           "/vel", 10,
           std::bind(&PushToControlTower::onGpsVel, this,
                     std::placeholders::_1))),
-      update_system_stats_timer_(this->create_wall_timer(
-          1s, std::bind(&PushToControlTower::update_system_stats_timer_callback,
-                        this))),
+      system_stats_sub_(
+          this->create_subscription<nturt_ros_interface::msg::SystemStats>(
+              "system_stats", 10,
+              std::bind(&PushToControlTower::onSystemStats, this,
+                        std::placeholders::_1))),
       send_data_timer_(this->create_wall_timer(
           200ms,
           std::bind(&PushToControlTower::send_data_timer_callback, this))),
@@ -59,9 +62,6 @@ PushToControlTower::PushToControlTower(rclcpp::NodeOptions options)
       ws_port_(this->declare_parameter("port", "")) {
   // init can_rx_
   memset(&can_rx_, 0, sizeof(can_rx_));
-
-  // init cpu stats
-  cpu_stats_.update();
 
   if (connect_to_ws() != 0) {
     RCLCPP_ERROR(
@@ -91,20 +91,9 @@ void PushToControlTower::onGpsVel(
   gps_vel_ = *msg;
 }
 
-void PushToControlTower::update_system_stats_timer_callback() {
-  CpuStats cpu_stats;
-  cpu_stats.update();
-  cpu_usage_ = get_cpu_usage(cpu_stats_, cpu_stats);
-  cpu_stats_ = cpu_stats;
-
-  // TODO: Figure the thermalzone of rpi cpu
-  cpu_temperature_ = get_thermalzone_temperature(0);
-
-  memory_stats_.update();
-  memory_usage_ = memory_stats_.get_memory_usage();
-  swap_usage_ = memory_stats_.get_swap_usage();
-
-  disk_usage_ = get_disk_usage("/");
+void PushToControlTower::onSystemStats(
+    const std::shared_ptr<nturt_ros_interface::msg::SystemStats> msg) {
+  system_stats_ = *msg;
 }
 
 void PushToControlTower::send_data_timer_callback() {
@@ -262,10 +251,11 @@ void PushToControlTower::send_data_timer_callback() {
       << ",\"gps_vel_linear_y\":" << gps_vel_.twist.linear.y;
 
   // system stats
-  ss_ << ",\"cpu_usage\":" << cpu_usage_
-      << ",\"cpu_temperature\":" << cpu_temperature_
-      << ",\"memory_usage\":" << memory_usage_
-      << ",\"swap_usage\":" << swap_usage_ << ",\"disk_usage\":" << disk_usage_;
+  ss_ << ",\"cpu_usage\":" << system_stats_.cpu_usage
+      << ",\"memory_usage\":" << system_stats_.memory_usage
+      << ",\"swap_usage\":" << system_stats_.swap_usage
+      << ",\"disk_usage\":" << system_stats_.disk_usage
+      << ",\"cpu_temperature\":" << system_stats_.cpu_temperature;
 
   ss_ << "}}";
 

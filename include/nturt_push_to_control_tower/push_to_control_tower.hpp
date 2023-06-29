@@ -1,8 +1,8 @@
 /**
  * @file nturt_push_to_control_tower_core.hpp
  * @author Jack b10502016@ntu.edu.tw
- * @brief a ROS package to get data from CAN sensor and GPS sensor, then push
- * them to the sever. The server package repo is
+ * @brief ROS2 package to get data from CAN sensor and GPS sensor, then push
+ * then to the sever. The server package repo is
  * [here](https://github.com/NTURacingTeam/ROS_server)
  */
 
@@ -31,7 +31,7 @@
 // nturt include
 #include "nturt_can_config.h"
 #include "nturt_can_config_logger-binutil.h"
-#include "nturt_push_to_control_tower/system_stats.hpp"
+#include "nturt_ros_interface/msg/system_stats.hpp"
 
 namespace http = boost::beast::http;
 namespace websocket = boost::beast::websocket;
@@ -57,8 +57,9 @@ class PushToControlTower : public rclcpp::Node {
   /// @brief Callback function when receiving message from "/vel".
   void onGpsVel(const std::shared_ptr<geometry_msgs::msg::TwistStamped> msg);
 
-  /// @brief Timed callback function for updating system stats.
-  void update_system_stats_timer_callback();
+  /// @brief Callback function when receiving message from "/system_stats".
+  void onSystemStats(
+      const std::shared_ptr<nturt_ros_interface::msg::SystemStats> msg);
 
   /// @brief Timed callback function for sending data to control tower.
   void send_data_timer_callback();
@@ -80,8 +81,10 @@ class PushToControlTower : public rclcpp::Node {
   rclcpp::Subscription<geometry_msgs::msg::TwistStamped>::SharedPtr
       gps_vel_sub_;
 
-  /// @brief ROS2 timer for updating system stats.
-  rclcpp::TimerBase::SharedPtr update_system_stats_timer_;
+  /// @brief ROS2 sbscriber to "/system_stats", for receiving system stats
+  /// information.
+  rclcpp::Subscription<nturt_ros_interface::msg::SystemStats>::SharedPtr
+      system_stats_sub_;
 
   /// @brief ROS2 timer for sending data to control tower.
   rclcpp::TimerBase::SharedPtr send_data_timer_;
@@ -120,26 +123,8 @@ class PushToControlTower : public rclcpp::Node {
   /// @brief Struct for storing "/vel" message data.
   geometry_msgs::msg::TwistStamped gps_vel_;
 
-  /// @brief Class for monitoring cpu stats.
-  CpuStats cpu_stats_;
-
-  /// @brief CPU usage;
-  double cpu_usage_;
-
-  /// @brief CPU temperature.
-  double cpu_temperature_;
-
-  /// @brief Class for monitoring memory stats.
-  MemoryStats memory_stats_;
-
-  /// @brief Memory usage;
-  double memory_usage_;
-
-  /// @brief Swap usage;
-  double swap_usage_;
-
-  /// @brief Disk usage.
-  double disk_usage_;
+  /// @brief Struct for storing "/system_stats" message data.
+  nturt_ros_interface::msg::SystemStats system_stats_;
 
   /// @brief String stream for sending data to control tower.
   std::stringstream ss_;

@@ -13,6 +13,7 @@ find_package(ament_cmake REQUIRED)
 find_package(can_msgs REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(nturt_can_config REQUIRED)
+find_package(nturt_ros_interface REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(rclcpp_components REQUIRED)
 find_package(sensor_msgs REQUIRED)
@@ -26,7 +27,6 @@ include_directories(
 # library: nturt_push_to_control_tower
 add_library(${PROJECT_NAME} SHARED
         src/push_to_control_tower.cpp
-        src/system_stats.cpp
 )
 target_link_libraries(nturt_push_to_control_tower
         ${Boost_LIBRARIES}
@@ -35,6 +35,7 @@ ament_target_dependencies(${PROJECT_NAME}
         can_msgs
         geometry_msgs
         nturt_can_config
+        nturt_ros_interface
         rclcpp
         rclcpp_components
         sensor_msgs
@@ -56,18 +57,6 @@ ament_target_dependencies(${PROJECT_NAME}_node
         rclcpp
 )
 
-# test: increasing_data_test_node
-add_executable(increasing_data_test_node
-        test/increasing_data_test.cpp
-)
-ament_target_dependencies(increasing_data_test_node
-        can_msgs
-        geometry_msgs
-        nturt_can_config
-        rclcpp
-        sensor_msgs
-)
-
 # install headers
 install(DIRECTORY include/${PROJECT_NAME}
         DESTINATION include
@@ -81,7 +70,7 @@ install(TARGETS ${PROJECT_NAME}
 )
 
 # install applications
-install(TARGETS ${PROJECT_NAME}_node increasing_data_test_node
+install(TARGETS ${PROJECT_NAME}_node
         DESTINATION lib/${PROJECT_NAME}
 )
 
@@ -114,6 +103,7 @@ ament_export_dependencies(
         can_msgs
         geometry_msgs
         nturt_can_config
+        nturt_ros_interface
         rclcpp
         rclcpp_components
         sensor_msgs
