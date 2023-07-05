@@ -17,7 +17,7 @@ def generate_launch_description():
     arguments.append(
         DeclareLaunchArgument(
             "port",
-            default_value="'8080'",
+            default_value="'21543'",
             description="The port of the control tower.",
         )
     )

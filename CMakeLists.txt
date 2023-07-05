@@ -75,7 +75,7 @@ install(TARGETS ${PROJECT_NAME}_node
 )
 
 # install launch scripts
-install(DIRECTORY launch
+install(DIRECTORY launch/
         DESTINATION share/${PROJECT_NAME}
 )
 

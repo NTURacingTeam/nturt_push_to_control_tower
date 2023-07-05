@@ -65,13 +65,12 @@ PushToControlTower::PushToControlTower(rclcpp::NodeOptions options)
 
   if (connect_to_ws() != 0) {
     RCLCPP_ERROR(
-        this->get_logger(),
+        get_logger(),
         "Failed to connect to websocket at %s:%s, retrying in 3 seconds.",
         ws_ip_.c_str(), ws_port_.c_str());
   } else {
-    RCLCPP_INFO(this->get_logger(),
-                "Successfully connect to websocket at %s:%s", ws_ip_.c_str(),
-                ws_port_.c_str());
+    RCLCPP_INFO(get_logger(), "Successfully connect to websocket at %s:%s",
+                ws_ip_.c_str(), ws_port_.c_str());
   }
 };
 
@@ -242,9 +241,15 @@ void PushToControlTower::send_data_timer_callback() {
       << ",\"imu_quaternion_z\":" << imu_quaternion->IMU_Quaternion_Z_phys;
 
   // gps_fix
-  ss_ << ",\"gps_fix_latitude\":" << gps_fix_.latitude
-      << ",\"gps_fix_longitude\":" << gps_fix_.longitude
-      << ",\"gps_fix_altitude\":" << gps_fix_.altitude;
+  if (gps_fix_.status.status == 0) {
+    ss_ << ",\"gps_fix_status\":null"
+        << ",\"gps_fix_longitude\":null"
+        << ",\"gps_fix_altitude\":null";
+  } else {
+    ss_ << ",\"gps_fix_longitude\":" << gps_fix_.longitude
+        << ",\"gps_fix_latitude\":" << gps_fix_.latitude
+        << ",\"gps_fix_altitude\":" << gps_fix_.altitude;
+  }
 
   // gps_vel
   ss_ << ",\"gps_vel_linear_x\":" << gps_vel_.twist.linear.x
@@ -259,7 +264,7 @@ void PushToControlTower::send_data_timer_callback() {
 
   ss_ << "}}";
 
-  RCLCPP_DEBUG(this->get_logger(), "Sending data to control tower: %s",
+  RCLCPP_DEBUG(get_logger(), "Sending data to control tower: %s",
                ss_.str().c_str());
 
   // send to control tower
@@ -277,13 +282,12 @@ void PushToControlTower::check_ws_connection_timer_callback() {
   if (!(ws_.is_open())) {
     if (connect_to_ws()) {
       RCLCPP_ERROR(
-          this->get_logger(),
+          get_logger(),
           "Failed to connect to websocket at %s:%s, retrying in 3 seconds.",
           ws_ip_.c_str(), ws_port_.c_str());
     } else {
-      RCLCPP_INFO(this->get_logger(),
-                  "Successfully connect to websocket at %s:%s", ws_ip_.c_str(),
-                  ws_port_.c_str());
+      RCLCPP_INFO(get_logger(), "Successfully connect to websocket at %s:%s",
+                  ws_ip_.c_str(), ws_port_.c_str());
     }
   }
 };
