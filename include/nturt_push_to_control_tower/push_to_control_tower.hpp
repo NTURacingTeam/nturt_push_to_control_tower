@@ -10,6 +10,7 @@
 #define NTURT_PUSH_TO_CONTROL_TOWER_HPP
 
 // std include
+#include <array>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -38,6 +39,18 @@ namespace websocket = boost::beast::websocket;
 namespace net = boost::asio;
 using tcp = boost::asio::ip::tcp;
 
+/* macro ---------------------------------------------------------------------*/
+// prameters
+#define NUM_BATTERY_SEGMENT 7
+#define NUM_BATTERY_CELL_PER_SEGMENT 12
+#define NUM_BATTERY_CELL_PER_FRAME 3
+
+/* typedef -------------------------------------------------------------------*/
+// battery data
+typedef std::array<std::array<double, NUM_BATTERY_CELL_PER_SEGMENT>,
+                   NUM_BATTERY_SEGMENT>
+    battery_data_t;
+
 /**
  * @author Jack b10502016@ntu.edu.tw
  * @brief Class for sending data to remote server.
@@ -61,8 +74,11 @@ class PushToControlTower : public rclcpp::Node {
   void onSystemStats(
       const std::shared_ptr<nturt_ros_interface::msg::SystemStats> msg);
 
-  /// @brief Timed callback function for sending data to control tower.
-  void send_data_timer_callback();
+  /// @brief Timed callback function for sending fast data to control tower.
+  void send_fast_data_timer_callback();
+
+  /// @brief Timed callback function for sending slow data to control tower.
+  void send_slow_data_timer_callback();
 
   /// @brief Timed callback function for checking websockt connection is
   /// established. If not, try to reconnect.
@@ -86,8 +102,11 @@ class PushToControlTower : public rclcpp::Node {
   rclcpp::Subscription<nturt_ros_interface::msg::SystemStats>::SharedPtr
       system_stats_sub_;
 
-  /// @brief ROS2 timer for sending data to control tower.
-  rclcpp::TimerBase::SharedPtr send_data_timer_;
+  /// @brief ROS2 timer for sending fast data to control tower.
+  rclcpp::TimerBase::SharedPtr send_fast_data_timer_;
+
+  /// @brief ROS2 timer for sending slow data to control tower.
+  rclcpp::TimerBase::SharedPtr send_slow_data_timer_;
 
   /// @brief ROS2 timer for reconnecting to websocket if disconnected.
   rclcpp::TimerBase::SharedPtr check_ws_connection_timer_;
@@ -125,6 +144,12 @@ class PushToControlTower : public rclcpp::Node {
 
   /// @brief Struct for storing "/system_stats" message data.
   nturt_ros_interface::msg::SystemStats system_stats_;
+
+  /// @brief 2D array for storing battery cell voltage.
+  battery_data_t battery_cell_voltage_;
+
+  /// @brief 2D array for storing battery cell temperature.
+  battery_data_t battery_cell_temperature_;
 
   /// @brief String stream for sending data to control tower.
   std::stringstream ss_;
