@@ -96,11 +96,11 @@ void PushToControlTower::onCan(
         bms_cell_stats->BMS_Cell_Voltage_3_phys;
 
     battery_cell_temperature_[segment_index][cell_index] =
-        bms_cell_stats->BMS_Cell_Temperature_1;
+        bms_cell_stats->BMS_Cell_Temperature_1_phys;
     battery_cell_temperature_[segment_index][cell_index + 1] =
-        bms_cell_stats->BMS_Cell_Temperature_2;
+        bms_cell_stats->BMS_Cell_Temperature_2_phys;
     battery_cell_temperature_[segment_index][cell_index + 2] =
-        bms_cell_stats->BMS_Cell_Temperature_3;
+        bms_cell_stats->BMS_Cell_Temperature_3_phys;
   }
 }
 
