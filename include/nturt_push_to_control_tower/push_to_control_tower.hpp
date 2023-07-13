@@ -9,6 +9,9 @@
 #ifndef NTURT_PUSH_TO_CONTROL_TOWER_HPP
 #define NTURT_PUSH_TO_CONTROL_TOWER_HPP
 
+// glibc include
+#include <stdint.h>
+
 // std include
 #include <array>
 #include <memory>
@@ -60,6 +63,9 @@ class PushToControlTower : public rclcpp::Node {
   /// @brief Constructor of PushToControlTower.
   PushToControlTower(rclcpp::NodeOptions options);
 
+  /// @brief Register codedbc callback function for can signal.
+  void register_can_callback();
+
  private:
   /// @brief Callback function when receiving message from "/from_can_bus".
   void onCan(const std::shared_ptr<can_msgs::msg::Frame> msg);
@@ -74,6 +80,10 @@ class PushToControlTower : public rclcpp::Node {
   void onSystemStats(
       const std::shared_ptr<nturt_ros_interface::msg::SystemStats> msg);
 
+  /// @brief Timed callback function for periodically checking can receive
+  /// timeout.
+  void check_can_timer_callback();
+
   /// @brief Timed callback function for sending fast data to control tower.
   void send_fast_data_timer_callback();
 
@@ -86,6 +96,9 @@ class PushToControlTower : public rclcpp::Node {
 
   /// @brief Function for connecting to websoccket.
   int connect_to_ws();
+
+  /* coder dbc callback function ---------------------------------------------*/
+  uint32_t get_tick();
 
   /// @brief ROS2 sbscriber to "/from_can_bus", for receiving can signal.
   rclcpp::Subscription<can_msgs::msg::Frame>::SharedPtr can_sub_;
@@ -101,6 +114,9 @@ class PushToControlTower : public rclcpp::Node {
   /// information.
   rclcpp::Subscription<nturt_ros_interface::msg::SystemStats>::SharedPtr
       system_stats_sub_;
+
+  /// @brief ROS2 timer for periodically checking can receive timeout.
+  rclcpp::TimerBase::SharedPtr check_can_timer_;
 
   /// @brief ROS2 timer for sending fast data to control tower.
   rclcpp::TimerBase::SharedPtr send_fast_data_timer_;

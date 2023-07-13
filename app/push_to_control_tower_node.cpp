@@ -13,8 +13,9 @@ int main(int argc, char **argv) {
   rclcpp::executors::StaticSingleThreadedExecutor executor;
   rclcpp::NodeOptions options;
 
-  rclcpp::Node::SharedPtr push_to_control_tower_node =
+  auto push_to_control_tower_node =
       std::make_shared<PushToControlTower>(options);
+  push_to_control_tower_node->register_can_callback();
 
   executor.add_node(push_to_control_tower_node);
   executor.spin();

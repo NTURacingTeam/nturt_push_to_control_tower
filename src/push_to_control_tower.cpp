@@ -1,6 +1,7 @@
 #include "nturt_push_to_control_tower/push_to_control_tower.hpp"
 
 // glibc include
+#include <stdint.h>
 #include <string.h>
 
 // std include
@@ -26,6 +27,8 @@
 
 // nturt include
 #include "nturt_can_config.h"
+#include "nturt_can_config/can_callback_register.hpp"
+#include "nturt_can_config/can_timeout_monitor.hpp"
 #include "nturt_can_config_logger-binutil.h"
 #include "nturt_ros_interface/msg/system_stats.hpp"
 
@@ -49,9 +52,12 @@ PushToControlTower::PushToControlTower(rclcpp::NodeOptions options)
                     std::placeholders::_1))),
       system_stats_sub_(
           this->create_subscription<nturt_ros_interface::msg::SystemStats>(
-              "system_stats", 10,
+              "/system_stats", 10,
               std::bind(&PushToControlTower::onSystemStats, this,
                         std::placeholders::_1))),
+      check_can_timer_(this->create_wall_timer(
+          100ms,
+          std::bind(&PushToControlTower::check_can_timer_callback, this))),
       send_fast_data_timer_(this->create_wall_timer(
           200ms,
           std::bind(&PushToControlTower::send_fast_data_timer_callback, this))),
@@ -65,6 +71,7 @@ PushToControlTower::PushToControlTower(rclcpp::NodeOptions options)
       ws_port_(this->declare_parameter("port", "")) {
   // init can_rx_
   memset(&can_rx_, 0, sizeof(can_rx_));
+  nturt_can_config_logger_Check_Receive_Timeout_Init(&can_rx_);
 
   if (connect_to_ws() != 0) {
     RCLCPP_ERROR(
@@ -76,6 +83,11 @@ PushToControlTower::PushToControlTower(rclcpp::NodeOptions options)
                 ws_ip_.c_str(), ws_port_.c_str());
   }
 };
+
+void PushToControlTower::register_can_callback() {
+  CanCallbackRegieter::register_callback(
+      static_cast<get_tick_t>(std::bind(&PushToControlTower::get_tick, this)));
+}
 
 void PushToControlTower::onCan(
     const std::shared_ptr<can_msgs::msg::Frame> msg) {
@@ -119,20 +131,37 @@ void PushToControlTower::onSystemStats(
   system_stats_ = *msg;
 }
 
+void PushToControlTower::check_can_timer_callback() {
+  nturt_can_config_logger_Check_Receive_Timeout(&can_rx_);
+}
+
 void PushToControlTower::send_fast_data_timer_callback() {
   ss_ << "{\"batch\":{";
 
+  // can rx timeout
+  uint32_t can_rx_error_node = 0;
+  if (can_timeout_monior::can_rx_error & FRAME_FRONT_MASK) {
+    can_rx_error_node |= 0x1;
+  }
+  if (can_timeout_monior::can_rx_error & FRAME_REAR_MASK) {
+    can_rx_error_node |= 0x2;
+  }
+  if (can_timeout_monior::can_rx_error & FRAME_BMS_MASK) {
+    can_rx_error_node |= 0x4;
+  }
+  if (can_timeout_monior::can_rx_error & FRAME_INVERTER_MASK) {
+    can_rx_error_node |= 0x8;
+  }
+  if (can_timeout_monior::can_rx_error & FRAME_IMU_MASK) {
+    can_rx_error_node |= 0x10;
+  }
+
+  ss_ << "\"can_rx_timeout\":" << can_rx_error_node;
+
   // vcu_status
   VCU_Status_t* vcu_status = &can_rx_.VCU_Status;
-  ss_ << "\"vcu_status\":" << static_cast<int>(vcu_status->VCU_Status)
+  ss_ << ",\"vcu_status\":" << static_cast<int>(vcu_status->VCU_Status)
       << ",\"vcu_error_code\":" << vcu_status->VCU_Error_Code;
-
-  // rear_sensor_status
-  REAR_SENSOR_Status_t* rear_sensor_status = &can_rx_.REAR_SENSOR_Status;
-  ss_ << ",\"rear_sensor_status\":"
-      << static_cast<int>(rear_sensor_status->REAR_SENSOR_Status)
-      << ",\"rear_sensor_error_code\":"
-      << rear_sensor_status->REAR_SENSOR_Error_Code;
 
   // front_sensor_1
   FRONT_SENSOR_1_t* front_sensor_1 = &can_rx_.FRONT_SENSOR_1;
@@ -143,9 +172,9 @@ void PushToControlTower::send_fast_data_timer_callback() {
       << front_sensor_1->FRONT_SENSOR_Accelerator_2_phys
       << ",\"steer_angle\":" << front_sensor_1->FRONT_SENSOR_Steer_Angle
       << ",\"brake_micro\":"
-      << static_cast<int>(front_sensor_1->FRONT_SENSOR_Accelerator_Micro)
+      << static_cast<int>(front_sensor_1->FRONT_SENSOR_Brake_Micro)
       << ",\"accelerator_micro\":"
-      << static_cast<int>(front_sensor_1->FRONT_SENSOR_Brake_Micro);
+      << static_cast<int>(front_sensor_1->FRONT_SENSOR_Accelerator_Micro);
 
   // front_sensor_2
   FRONT_SENSOR_2_t* front_sensor_2 = &can_rx_.FRONT_SENSOR_2;
@@ -211,6 +240,25 @@ void PushToControlTower::send_fast_data_timer_callback() {
       << ",\"rear_right_tire_temperature_4\":"
       << rear_sensor_2->REAR_SENSOR_Rear_Right_Tire_Temperature_4_phys;
 
+  // rear_sensor_status
+  REAR_SENSOR_Status_t* rear_sensor_status = &can_rx_.REAR_SENSOR_Status;
+  ss_ << ",\"rear_sensor_status\":"
+      << static_cast<int>(rear_sensor_status->REAR_SENSOR_Status)
+      << ",\"rear_sensor_error_code\":"
+      << rear_sensor_status->REAR_SENSOR_Error_Code;
+
+  // bms_status
+  ss_ << ",\"bms_error_code\":"
+      << static_cast<int>(can_rx_.BMS_Status.BMS_Error_Code);
+
+  // inverter_temperature
+  ss_ << ",\"inverter_control_board_temperature\":"
+      << can_rx_.INV_Temperature_Set_2.INV_Control_Board_Temp_phys
+      << ",\"inverter_hot_spot_temperature\":"
+      << can_rx_.INV_Temperature_Set_3.INV_Hot_Spot_Temp_phys
+      << ",\"motor_temperature\":"
+      << can_rx_.INV_Temperature_Set_3.INV_Motor_Temp_phys;
+
   // inverter_fault_codes
   INV_Fault_Codes_t* inverter_fault_codes = &can_rx_.INV_Fault_Codes;
   ss_ << ",\"inverter_post_fault_lo\":"
@@ -232,12 +280,9 @@ void PushToControlTower::send_fast_data_timer_callback() {
       << inverter_fast_info->INV_Fast_DC_Bus_Voltage_phys;
 
   // inverter other
-  ss_ << ",\"inverter_control_board_temperature\":"
-      << can_rx_.INV_Temperature_Set_2.INV_Control_Board_Temp_phys
-      << ",\"inverter_hot_spot_temperature\":"
-      << can_rx_.INV_Temperature_Set_3.INV_Hot_Spot_Temp_phys
-      << ",\"motor_temperature\":"
-      << can_rx_.INV_Temperature_Set_3.INV_Motor_Temp_phys
+  ss_ << ",\"inverter_vsm_state\":" << can_rx_.INV_Internal_States.INV_VSM_State
+      << ",\"inverter_state\":"
+      << can_rx_.INV_Internal_States.INV_Inverter_State
       << ",\"inverter_dc_bus_current\":"
       << can_rx_.INV_Current_Info.INV_DC_Bus_Current_phys;
 
@@ -384,6 +429,10 @@ int PushToControlTower::connect_to_ws() {
   } catch (std::exception& error) {
     return 1;
   }
+}
+
+uint32_t PushToControlTower::get_tick() {
+  return static_cast<uint32_t>(now().nanoseconds() / 1000000);
 }
 
 #include "rclcpp_components/register_node_macro.hpp"
