@@ -95,24 +95,7 @@ void PushToControlTower::onCan(
                                                 msg->id, msg->dlc);
 
   if (id == BMS_Cell_Stats_CANID) {
-    BMS_Cell_Stats_t* bms_cell_stats = &can_rx_.BMS_Cell_Stats;
-    int segment_index = bms_cell_stats->BMS_Segment_Index,
-        cell_index =
-            NUM_BATTERY_CELL_PER_FRAME * bms_cell_stats->BMS_Cell_Index;
-
-    battery_cell_voltage_[segment_index][cell_index] =
-        bms_cell_stats->BMS_Cell_Voltage_1_phys;
-    battery_cell_voltage_[segment_index][cell_index + 1] =
-        bms_cell_stats->BMS_Cell_Voltage_2_phys;
-    battery_cell_voltage_[segment_index][cell_index + 2] =
-        bms_cell_stats->BMS_Cell_Voltage_3_phys;
-
-    battery_cell_temperature_[segment_index][cell_index] =
-        bms_cell_stats->BMS_Cell_Temperature_1_phys;
-    battery_cell_temperature_[segment_index][cell_index + 1] =
-        bms_cell_stats->BMS_Cell_Temperature_2_phys;
-    battery_cell_temperature_[segment_index][cell_index + 2] =
-        bms_cell_stats->BMS_Cell_Temperature_3_phys;
+    battery_data_.update(&can_rx_.BMS_Cell_Stats);
   }
 }
 
@@ -251,6 +234,11 @@ void PushToControlTower::send_fast_data_timer_callback() {
   ss_ << ",\"bms_error_code\":"
       << static_cast<int>(can_rx_.BMS_Status.BMS_Error_Code);
 
+  // battery info
+  double voltage = battery_data_.average_voltage();
+  double current = can_rx_.INV_Current_Info.INV_DC_Bus_Current_phys;
+  ss_ << ",\"state_of_charge\":" << state_of_charge(voltage, current);
+
   // inverter_temperature
   ss_ << ",\"inverter_control_board_temperature\":"
       << can_rx_.INV_Temperature_Set_2.INV_Control_Board_Temp_phys
@@ -355,7 +343,7 @@ void PushToControlTower::send_slow_data_timer_callback() {
   for (int i = 0; i < NUM_BATTERY_SEGMENT; i++) {
     ss_ << "[";
     for (int j = 0; j < NUM_BATTERY_CELL_PER_SEGMENT; j++) {
-      ss_ << battery_cell_voltage_[i][j];
+      ss_ << battery_data_.voltage[i][j];
       if (j != NUM_BATTERY_CELL_PER_SEGMENT - 1) {
         ss_ << ",";
       }
@@ -371,7 +359,7 @@ void PushToControlTower::send_slow_data_timer_callback() {
   for (int i = 0; i < NUM_BATTERY_SEGMENT; i++) {
     ss_ << "[";
     for (int j = 0; j < NUM_BATTERY_CELL_PER_SEGMENT; j++) {
-      ss_ << battery_cell_temperature_[i][j];
+      ss_ << battery_data_.temperature[i][j];
       if (j != NUM_BATTERY_CELL_PER_SEGMENT - 1) {
         ss_ << ",";
       }

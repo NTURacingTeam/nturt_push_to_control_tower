@@ -34,6 +34,7 @@
 
 // nturt include
 #include "nturt_can_config.h"
+#include "nturt_can_config/battery_utils.hpp"
 #include "nturt_can_config_logger-binutil.h"
 #include "nturt_ros_interface/msg/system_stats.hpp"
 
@@ -41,18 +42,6 @@ namespace http = boost::beast::http;
 namespace websocket = boost::beast::websocket;
 namespace net = boost::asio;
 using tcp = boost::asio::ip::tcp;
-
-/* macro ---------------------------------------------------------------------*/
-// prameters
-#define NUM_BATTERY_SEGMENT 7
-#define NUM_BATTERY_CELL_PER_SEGMENT 12
-#define NUM_BATTERY_CELL_PER_FRAME 3
-
-/* typedef -------------------------------------------------------------------*/
-// battery data
-typedef std::array<std::array<double, NUM_BATTERY_CELL_PER_SEGMENT>,
-                   NUM_BATTERY_SEGMENT>
-    battery_data_t;
 
 /**
  * @author Jack b10502016@ntu.edu.tw
@@ -161,11 +150,8 @@ class PushToControlTower : public rclcpp::Node {
   /// @brief Struct for storing "/system_stats" message data.
   nturt_ros_interface::msg::SystemStats system_stats_;
 
-  /// @brief 2D array for storing battery cell voltage.
-  battery_data_t battery_cell_voltage_;
-
-  /// @brief 2D array for storing battery cell temperature.
-  battery_data_t battery_cell_temperature_;
+  /// @brief Struct for storing battery data.
+  BatteryData battery_data_;
 
   /// @brief String stream for sending data to control tower.
   std::stringstream ss_;
