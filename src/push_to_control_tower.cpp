@@ -268,9 +268,10 @@ void PushToControlTower::send_fast_data_timer_callback() {
       << inverter_fast_info->INV_Fast_DC_Bus_Voltage_phys;
 
   // inverter other
-  ss_ << ",\"inverter_vsm_state\":" << can_rx_.INV_Internal_States.INV_VSM_State
+  ss_ << ",\"inverter_vsm_state\":"
+      << static_cast<int>(can_rx_.INV_Internal_States.INV_VSM_State)
       << ",\"inverter_state\":"
-      << can_rx_.INV_Internal_States.INV_Inverter_State
+      << static_cast<int>(can_rx_.INV_Internal_States.INV_Inverter_State)
       << ",\"inverter_dc_bus_current\":"
       << can_rx_.INV_Current_Info.INV_DC_Bus_Current_phys;
 
@@ -299,8 +300,8 @@ void PushToControlTower::send_fast_data_timer_callback() {
 
   // gps_fix
   if (gps_fix_.status.status == 0) {
-    ss_ << ",\"gps_fix_status\":null"
-        << ",\"gps_fix_longitude\":null"
+    ss_ << ",\"gps_fix_longitude\":null"
+        << ",\"gps_fix_latitude\":null"
         << ",\"gps_fix_altitude\":null";
   } else {
     ss_ << ",\"gps_fix_longitude\":" << gps_fix_.longitude
