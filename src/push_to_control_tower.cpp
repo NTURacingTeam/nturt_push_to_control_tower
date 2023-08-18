@@ -7,6 +7,7 @@
 // std include
 #include <fstream>
 #include <functional>
+#include <iomanip>
 #include <memory>
 #include <sstream>
 #include <string>
@@ -320,7 +321,8 @@ void PushToControlTower::send_fast_data_timer_callback() {
       << ",\"disk_usage\":" << system_stats_.disk_usage
       << ",\"cpu_temperature\":" << system_stats_.cpu_temperature;
 
-  ss_ << "}}";
+  ss_ << "},\"timestamp\":" << std::fixed << get_clock()->now().seconds()
+      << std::defaultfloat << "}";
 
   RCLCPP_DEBUG(get_logger(), "Sending data to control tower: %s",
                ss_.str().c_str());
@@ -337,7 +339,7 @@ void PushToControlTower::send_fast_data_timer_callback() {
 };
 
 void PushToControlTower::send_slow_data_timer_callback() {
-  ss_ << "{\"batch\":{";
+  ss_ << "{\"accumulator\":{";
 
   // battery cell voltage
   ss_ << "\"accumulator_voltage\":[";
@@ -371,7 +373,8 @@ void PushToControlTower::send_slow_data_timer_callback() {
     }
   }
 
-  ss_ << "]}}";
+  ss_ << "]},\"timestamp\":" << std::fixed << get_clock()->now().seconds()
+      << std::defaultfloat << "}";
 
   RCLCPP_DEBUG(get_logger(), "Sending data to control tower: %s",
                ss_.str().c_str());
