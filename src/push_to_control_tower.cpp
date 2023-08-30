@@ -5,6 +5,7 @@
 #include <string.h>
 
 // std include
+#include <cmath>
 #include <fstream>
 #include <functional>
 #include <iomanip>
@@ -311,8 +312,10 @@ void PushToControlTower::send_fast_data_timer_callback() {
   }
 
   // gps_vel
-  ss_ << ",\"gps_vel_linear_x\":" << gps_vel_.twist.linear.x
-      << ",\"gps_vel_linear_y\":" << gps_vel_.twist.linear.y;
+  ss_ << ",\"gps_vel_linear_x\":"
+      << (std::isnan(gps_vel_.twist.linear.x) ? 0 : gps_vel_.twist.linear.x)
+      << ",\"gps_vel_linear_y\":"
+      << (std::isnan(gps_vel_.twist.linear.y) ? 0 : gps_vel_.twist.linear.y);
 
   // system stats
   ss_ << ",\"cpu_usage\":" << system_stats_.cpu_usage
